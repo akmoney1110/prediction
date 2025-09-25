@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Predict 10 Wins</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <h1 class="text-3xl font-bold mb-6">🎯 Predict 10 Wins / 1X</h1>
+
+    <a href="{% url 'predict:predict_10_wins' %}" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mb-4 inline-block">🔁 Refresh</a>
+
+    {% if predictions %}
+        <table class="w-full mt-4 border border-gray-700">
+            <thead class="bg-gray-800">
+                <tr>
+                    <th class="py-2 px-4">Home Team</th>
+                    <th class="py-2 px-4">Away Team</th>
+                    <th class="py-2 px-4">Prediction</th>
+                    <th class="py-2 px-4">Home Score</th>
+                    <th class="py-2 px-4">Away Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in predictions %}
+                <tr class="border-t border-gray-700 hover:bg-gray-800">
+                    <td class="py-2 px-4">{{ match.home_team }}</td>
+                    <td class="py-2 px-4">{{ match.away_team }}</td>
+                    <td class="py-2 px-4 font-semibold">{{ match.prediction }}</td>
+                    <td class="py-2 px-4">{{ match.home_score }}</td>
+                    <td class="py-2 px-4">{{ match.away_score }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-yellow-300 mt-4">No strong Win/1X predictions found for today.</p>
+    {% endif %}
+</body>
+</html>

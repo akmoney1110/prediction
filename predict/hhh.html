@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Payment Portal</title>
+    <style>
+        :root {
+            --primary: #4a6bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7ff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.2);
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #3a5bef;
+        }
+        
+        .payment-option {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .amount-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 14px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .error {
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .secure-badge svg {
+            margin-right: 8px;
+            fill: var(--success);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Secure Payment Portal</h1>
+            <p>Please enter your tracking information to proceed with payment</p>
+        </div>
+        
+        <form id="paymentForm">
+            <div class="form-group" id="trackingGroup">
+                <label for="trackingId">Tracking ID</label>
+                <input type="text" id="trackingId" placeholder="Enter your tracking ID" required>
+            </div>
+            
+            <div class="payment-option" id="paymentSection">
+                <div class="form-group">
+                    <label for="paymentType">Payment Option</label>
+                    <select id="paymentType" required>
+                        <option value="" disabled selected>Select payment option</option>
+                        <option value="full">Full Payment - ₦5,450</option>
+                        <option value="half">Partial Payment - ₦2,725 (50%)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Amount to Pay</label>
+                    <input type="number" id="amount" placeholder="Enter amount" required>
+                    <div class="error" id="amountError">Please enter the correct amount for your selected payment option</div>
+                </div>
+                
+                <div class="amount-info">
+                    <strong>Important:</strong> For your transaction to be processed, you must enter the exact amount corresponding to your selected payment option (either ₦5,450 for full payment or ₦2,725 for partial payment).
+                </div>
+            </div>
+            
+            <button type="submit" class="btn" id="submitBtn">Continue</button>
+        </form>
+        
+        <div class="secure-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V11.99z"/>
+            </svg>
+            Secure SSL Encrypted Payment
+        </div>
+    </div>
+
+    <script>
+        const paymentForm = document.getElementById('paymentForm');
+        const trackingGroup = document.getElementById('trackingGroup');
+        const paymentSection = document.getElementById('paymentSection');
+        const paymentType = document.getElementById('paymentType');
+        const amountInput = document.getElementById('amount');
+        const amountError = document.getElementById('amountError');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        const paymentAmounts = {
+            full: 5450,
+            half: 2725
+        };
+        
+        // Simulate tracking ID verification
+        paymentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const trackingId = document.getElementById('trackingId').value;
+            
+            if (!paymentSection.style.display || paymentSection.style.display === 'none') {
+                // First step - verify tracking ID
+                if (trackingId.trim() === '') {
+                    alert('Please enter your tracking ID');
+                    return;
+                }
+                
+                // Show payment section
+                paymentSection.style.display = 'block';
+                submitBtn.textContent = 'Complete Payment';
+                trackingGroup.style.opacity = '0.6';
+                trackingGroup.style.pointerEvents = 'none';
+                
+                // Scroll to payment section
+                paymentSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                // Second step - process payment
+                const selectedOption = paymentType.value;
+                const enteredAmount = parseFloat(amountInput.value);
+                
+                if (!selectedOption) {
+                    alert('Please select a payment option');
+                    return;
+                }
+                
+                const expectedAmount = paymentAmounts[selectedOption];
+                
+                if (enteredAmount !== expectedAmount) {
+                    amountError.style.display = 'block';
+                    amountInput.style.borderColor = 'var(--danger)';
+                    return;
+                }
+                
+                // Successful payment simulation
+                alert(`Payment of ₦${enteredAmount.toLocaleString()} processed successfully!\nYour transaction is being completed.`);
+                paymentForm.reset();
+                paymentSection.style.display = 'none';
+                submitBtn.textContent = 'Continue';
+                trackingGroup.style.opacity = '1';
+                trackingGroup.style.pointerEvents = 'auto';
+                amountError.style.display = 'none';
+                amountInput.style.borderColor = 'var(--border)';
+            }
+        });
+        
+        // Update amount placeholder when payment type changes
+        paymentType.addEventListener('change', function() {
+            const selectedOption = this.value;
+            amountInput.placeholder = `Enter ₦${paymentAmounts[selectedOption].toLocaleString()}`;
+            amountError.style.display = 'none';
+            amountInput.style.borderColor = 'var(--border)';
+        });
+    </script>
+</body>
+</html>

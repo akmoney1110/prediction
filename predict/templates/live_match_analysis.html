@@ -1,0 +1,874 @@
+{% load custom_filters %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ fixture.teams.home.name }} vs {{ fixture.teams.away.name }} - Match Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .match-header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .team-logo {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .match-score {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .match-status {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .stats-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .home-stat {
+            background-color: var(--primary-color);
+        }
+        
+        .away-stat {
+            background-color: var(--danger-color);
+        }
+        
+        .event-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .goal {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .card-yellow {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .card-red {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .substitution {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .player-card {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .player-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .injury-badge {
+            background-color: var(--danger-color);
+            font-size: 0.7rem;
+        }
+        
+        .form-badge {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-right: 3px;
+        }
+        
+        .win {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .draw {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .loss {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .h2h-team {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .h2h-winner {
+            font-weight: bold;
+            color: var(--success-color);
+        }
+        
+        .refresh-btn {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: rotate(180deg);
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .team-logo {
+                height: 50px;
+            }
+            
+            .match-score {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Match Header -->
+        <div class="match-header p-4 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-5 text-end">
+                    <h3 class="mb-0">{{ fixture.teams.home.name }}</h3>
+                </div>
+                <div class="col-md-2 text-center">
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+                            <img src="{{ fixture.teams.home.logo }}" alt="{{ fixture.teams.home.name }}" class="team-logo me-3">
+                            <div class="match-score">
+    {% if fixture.score.fulltime.home is not None %}
+        {{ fixture.score.fulltime.home }} - {{ fixture.score.fulltime.away }}
+    {% elif fixture.score.extratime.home is not None %}
+        {{ fixture.score.extratime.home }} - {{ fixture.score.extratime.away }}
+    {% elif fixture.score.Started.home is not None %}
+        {{ fixture.score.Started.home }} - {{ fixture.score.Started.away }}    
+    {% elif fixture.score.penalty.home is not None %}
+        {{ fixture.score.penalty.home }} - {{ fixture.score.penalty.away }} (PEN)
+    {% elif fixture.score.halftime.home is not None %}
+        HT: {{ fixture.score.halftime.home }} - {{ fixture.score.halftime.away }}
+    {% else %}
+        VS
+    {% endif %}
+</div>
+
+                            <img src="{{ fixture.teams.away.logo }}" alt="{{ fixture.teams.away.name }}" class="team-logo ms-3">
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="match-status me-2">
+                                {% if fixture.status.long == "Match Finished" %}
+                                    FT
+                                {% elif fixture.status.long == "Second Half" %}
+                                    2HT    
+                                {% elif fixture.status.long == "Match Postponed" %}
+                                    Postponed
+                                {% elif fixture.status.long == "Not Started" %}
+                                    {{ fixture.fixture.date|date:"H:i" }}
+                                {% else %}
+                                    {{ fixture.status.elapsed }}'
+                                {% endif %}
+                            </span>
+                            <span>{{ fixture.league.name }} - {{ fixture.league.round }}</span>
+                            <i class="fas fa-sync-alt refresh-btn ms-2 text-white" onclick="location.reload()"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5 text-start">
+                    <h3 class="mb-0">{{ fixture.teams.away.name }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="matchTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Overview</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab">Statistics</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="lineups-tab" data-bs-toggle="tab" data-bs-target="#lineups" type="button" role="tab">Lineups</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">Match Events</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="h2h-tab" data-bs-toggle="tab" data-bs-target="#h2h" type="button" role="tab">Head to Head</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings" type="button" role="tab">Standings</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="matchTabsContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row">
+                    <!-- Match Summary -->
+                    <div class="col-lg-8">
+                        <div class="stats-container mb-4">
+                            <h5 class="mb-3"><i class="fas fa-chart-pie me-2"></i>Match Summary</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-center">{{ fixture.teams.home.name }}</h6>
+                                    <div class="text-center mb-3">
+                                        {% for form in home_recent|slice:":5" %}
+                                            <span class="form-badge 
+                                                {% if form.teams.home.id == home_id and form.goals.home > form.goals.away %}win
+                                                {% elif form.teams.away.id == home_id and form.goals.away > form.goals.home %}win
+                                                {% elif form.goals.home == form.goals.away %}draw
+                                                {% else %}loss{% endif %}">
+                                                {% if form.teams.home.id == home_id and form.goals.home > form.goals.away %}W
+                                                {% elif form.teams.away.id == home_id and form.goals.away > form.goals.home %}W
+                                                {% elif form.goals.home == form.goals.away %}D
+                                                {% else %}L{% endif %}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                    <p><strong>Form:</strong> Last 5 matches</p>
+                                    {% if home_injuries %}
+                                        <p><strong>Injuries:</strong> {{ home_injuries|length }} players</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-center">{{ fixture.teams.away.name }}</h6>
+                                    <div class="text-center mb-3">
+                                        {% for form in away_recent|slice:":5" %}
+                                            <span class="form-badge 
+                                                {% if form.teams.home.id == away_id and form.goals.home > form.goals.away %}win
+                                                {% elif form.teams.away.id == away_id and form.goals.away > form.goals.home %}win
+                                                {% elif form.goals.home == form.goals.away %}draw
+                                                {% else %}loss{% endif %}">
+                                                {% if form.teams.home.id == away_id and form.goals.home > form.goals.away %}W
+                                                {% elif form.teams.away.id == away_id and form.goals.away > form.goals.home %}W
+                                                {% elif form.goals.home == form.goals.away %}D
+                                                {% else %}L{% endif %}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                    <p><strong>Form:</strong> Last 5 matches</p>
+                                    {% if away_injuries %}
+                                        <p><strong>Injuries:</strong> {{ away_injuries|length }} players</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Statistics Preview -->
+                        <div class="stats-container mb-4">
+                            <h5 class="mb-3"><i class="fas fa-key me-2"></i>Key Statistics</h5>
+                            {% if statistics %}
+                                {% for stat in statistics %}
+                                    {% if stat.type == "Shots on Target" or stat.type == "Possession" or stat.type == "Total Shots" or stat.type == "Corners" %}
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span>{{ stat.value.home|default_if_none:"0" }}</span>
+                                                <strong>{{ stat.type }}</strong>
+                                                <span>{{ stat.value.away|default_if_none:"0" }}</span>
+                                            </div>
+                                            <div class="stat-bar">
+                                                <div class="stat-bar-fill home-stat" style="width: {% widthratio stat.value.home stat.value.home|add:stat.value.away 100 %}%"></div>
+                                                <div class="stat-bar-fill away-stat" style="width: {% widthratio stat.value.away stat.value.home|add:stat.value.away 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">Statistics not available yet</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Recent Matches -->
+                    <div class="col-lg-4">
+                        <div class="stats-container">
+                            <h5 class="mb-3"><i class="fas fa-history me-2"></i>Recent Matches</h5>
+                            <ul class="list-group list-group-flush">
+                                {% for match in head_to_head|slice:":5" %}
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="{% if match.teams.home.id == home_id and match.goals.home > match.goals.away %}h2h-team{% elif match.teams.away.id == home_id and match.goals.away > match.goals.home %}h2h-team{% endif %}">
+                                                {{ match.teams.home.name }}
+                                            </span>
+                                            <span class="{% if match.goals.home == match.goals.away %}text-warning{% else %}h2h-winner{% endif %}">
+                                                {{ match.goals.home }} - {{ match.goals.away }}
+                                            </span>
+                                            <span class="{% if match.teams.away.id == home_id and match.goals.away > match.goals.home %}h2h-team{% elif match.teams.home.id == home_id and match.goals.home > match.goals.away %}h2h-team{% endif %}">
+                                                {{ match.teams.away.name }}
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">{{ match.league.name }} - {{ match.fixture.date|date:"M d, Y" }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div class="tab-pane fade" id="stats" role="tabpanel">
+                <div class="stats-container">
+                    <h5 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Match Statistics</h5>
+     
+{% if statistics %}
+<div class="stats-container">
+    <table class="table stats-table table-hover">
+        <tbody>
+            {% for stat in statistics %}
+            <tr>
+                <td class="text-start home-stat {% if stat.home > stat.away %}highlight-stat{% endif %}">
+                    {{ stat.home|default:"-" }}
+                </td>
+                <td class="text-center stat-name">
+                    <span class="stat-icon">
+                        {% if stat.type == "Shots on Goal" %}🎯
+                        {% elif stat.type == "Shots off Goal" %}⚡
+                        {% elif stat.type == "Total Shots" %}🔫
+                        {% elif stat.type == "Blocked Shots" %}🛡️
+                        {% elif stat.type == "Shots insidebox" %}📦
+                        {% elif stat.type == "Shots outsidebox" %}🌐
+                        {% elif stat.type == "Fouls" %}💢
+                        {% elif stat.type == "Corner Kicks" %}↩️
+                        {% elif stat.type == "Offsides" %}🚩
+                        {% elif stat.type == "Ball Possession" %}⏱️
+                        {% elif stat.type == "Yellow Cards" %}🟨
+                        {% elif stat.type == "Red Cards" %}🟥
+                        {% elif stat.type == "Goalkeeper Saves" %}🧤
+                        {% elif stat.type == "Total passes" %}🔄
+                        {% elif stat.type == "Passes accurate" %}🎯
+                        {% elif stat.type == "expected_goals" %}📊
+                        {% endif %}
+                    </span>
+                    {{ stat.type }}
+                </td>
+                <td class="text-end away-stat {% if stat.away > stat.home %}highlight-stat{% endif %}">
+                    {{ stat.away|default:"-" }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="no-stats">
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Statistics not available yet
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .stats-container {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .stats-table {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+    
+    .stat-name {
+        font-weight: 500;
+        padding-left: 15px;
+    }
+    
+    .stat-icon {
+        margin-right: 8px;
+        font-size: 0.9em;
+    }
+    
+    .highlight-stat {
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .home-stat {
+        color: #3498db;
+    }
+    
+    .away-stat {
+        color: #e74c3c;
+    }
+    
+    .no-stats {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-table {
+            font-size: 0.8rem;
+        }
+        
+        .stat-icon {
+            display: none;
+        }
+    }
+</style>
+                </div>
+            </div>
+
+            <!-- Lineups Tab -->
+            <div class="tab-pane fade" id="lineups" role="tabpanel">
+                <div class="stats-container">
+                    <h5 class="mb-4"><i class="fas fa-users me-2"></i>Team Lineups</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">{{ fixture.teams.home.name }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if lineups.0.formation %}
+                                        <p class="text-center"><strong>Formation:</strong> {{ lineups.0.formation }}</p>
+                                    {% endif %}
+                                    <div class="row">
+                                        {% for player in lineups.0.startXI %}
+                                            <div class="col-6 mb-3">
+                                                <div class="player-card p-2 border rounded">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span>{{ player.player.name }}</span>
+                                                        <span>{{ player.player.number }}</span>
+                                                    </div>
+                                                    <small class="text-muted">{{ player.player.pos }}</small>
+                                                    {% for injury in home_injuries %}
+                                                        {% if injury.player.id == player.player.id %}
+                                                            <span class="badge injury-badge float-end">Injured</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if lineups.0.substitutes %}
+                                        <h6 class="mt-4">Substitutes</h6>
+                                        <div class="row">
+                                            {% for player in lineups.0.substitutes %}
+                                                <div class="col-6 mb-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>{{ player.player.name }}</span>
+                                                        <span>{{ player.player.number }}</span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0">{{ fixture.teams.away.name }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if lineups.1.formation %}
+                                        <p class="text-center"><strong>Formation:</strong> {{ lineups.1.formation }}</p>
+                                    {% endif %}
+                                    <div class="row">
+                                        {% for player in lineups.1.startXI %}
+                                            <div class="col-6 mb-3">
+                                                <div class="player-card p-2 border rounded">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span>{{ player.player.name }}</span>
+                                                        <span>{{ player.player.number }}</span>
+                                                    </div>
+                                                    <small class="text-muted">{{ player.player.pos }}</small>
+                                                    {% for injury in away_injuries %}
+                                                        {% if injury.player.id == player.player.id %}
+                                                            <span class="badge injury-badge float-end">Injured</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if lineups.1.substitutes %}
+                                        <h6 class="mt-4">Substitutes</h6>
+                                        <div class="row">
+                                            {% for player in lineups.1.substitutes %}
+                                                <div class="col-6 mb-2">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>{{ player.player.name }}</span>
+                                                        <span>{{ player.player.number }}</span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Player Statistics -->
+                    {% if player_stats %}
+                        <h5 class="mt-5 mb-3"><i class="fas fa-running me-2"></i>Player Statistics</h5>
+                        <ul class="nav nav-tabs mb-3" id="playerStatsTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="home-players-tab" data-bs-toggle="tab" data-bs-target="#home-players" type="button" role="tab">{{ fixture.teams.home.name }}</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="away-players-tab" data-bs-toggle="tab" data-bs-target="#away-players" type="button" role="tab">{{ fixture.teams.away.name }}</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="playerStatsTabsContent">
+                            <div class="tab-pane fade show active" id="home-players" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Player</th>
+                                                <th>Pos</th>
+                                                <th>Rating</th>
+                                                <th>Goals</th>
+                                                <th>Shots</th>
+                                                <th>Pass%</th>
+                                                <th>Tackles</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for player in player_stats.0.players %}
+                                                <tr>
+                                                    <td>{{ player.player.name }}</td>
+                                                    <td>{{ player.statistics.0.games.position }}</td>
+                                                    <td>{{ player.statistics.0.games.rating|default:"-" }}</td>
+                                                    <td>{{ player.statistics.0.goals.total|default:"0" }}</td>
+                                                    <td>{{ player.statistics.0.shots.total|default:"0" }}</td>
+                                                    <td>{{ player.statistics.0.passes.accuracy|default:"-" }}</td>
+                                                    <td>{{ player.statistics.0.tackles.total|default:"0" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="away-players" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Player</th>
+                                                <th>Pos</th>
+                                                <th>Rating</th>
+                                                <th>Goals</th>
+                                                <th>Shots</th>
+                                                <th>Pass%</th>
+                                                <th>Tackles</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for player in player_stats.1.players %}
+                                                <tr>
+                                                    <td>{{ player.player.name }}</td>
+                                                    <td>{{ player.statistics.0.games.position }}</td>
+                                                    <td>{{ player.statistics.0.games.rating|default:"-" }}</td>
+                                                    <td>{{ player.statistics.0.goals.total|default:"0" }}</td>
+                                                    <td>{{ player.statistics.0.shots.total|default:"0" }}</td>
+                                                    <td>{{ player.statistics.0.passes.accuracy|default:"-" }}</td>
+                                                    <td>{{ player.statistics.0.tackles.total|default:"0" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Events Tab -->
+            <div class="tab-pane fade" id="events" role="tabpanel">
+                <div class="stats-container">
+                    <h5 class="mb-4"><i class="fas fa-list-ol me-2"></i>Match Events</h5>
+                    {% if events %}
+                        <div class="timeline">
+                            {% for event in events %}
+                                <div class="d-flex mb-3">
+                                    <div class="flex-shrink-0 text-center" style="width: 50px;">
+                                        <strong>{{ event.time.elapsed }}'</strong>
+                                        {% if event.time.extra %}
+                                            <small>+{{ event.time.extra }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="d-flex align-items-center">
+                                            <span class="event-icon 
+                                                {% if event.type == 'Goal' %}goal
+                                                {% elif event.type == 'Card' and event.detail == 'Yellow Card' %}card-yellow
+                                                {% elif event.type == 'Card' and event.detail == 'Red Card' %}card-red
+                                                {% elif event.type == 'subst' %}substitution{% endif %}">
+                                                {% if event.type == 'Goal' %}<i class="fas fa-futbol"></i>
+                                                {% elif event.type == 'Card' and event.detail == 'Yellow Card' %}<i class="fas fa-square"></i>
+                                                {% elif event.type == 'Card' and event.detail == 'Red Card' %}<i class="fas fa-square"></i>
+                                                {% elif event.type == 'subst' %}<i class="fas fa-exchange-alt"></i>{% endif %}
+                                            </span>
+                                            <strong>{{ event.player.name }}</strong>
+                                            <span class="ms-2">{{ event.detail }}</span>
+                                            {% if event.assist.name %}
+                                                <small class="text-muted ms-2">(assist: {{ event.assist.name }})</small>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ event.team.name }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No events available yet</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Head to Head Tab -->
+            <div class="tab-pane fade" id="h2h" role="tabpanel">
+                <div class="stats-container">
+                    <h5 class="mb-4"><i class="fas fa-chess me-2"></i>Head to Head</h5>
+                    {% if head_to_head %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Competition</th>
+                                        <th>Home Team</th>
+                                        <th>Score</th>
+                                        <th>Away Team</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for match in head_to_head %}
+                                        <tr>
+                                            <td>{{ match.fixture.date|date:"M d, Y" }}</td>
+                                            <td>{{ match.league.name }}</td>
+                                            <td class="{% if match.teams.home.id == home_id and match.goals.home > match.goals.away %}h2h-team{% elif match.teams.away.id == home_id and match.goals.away > match.goals.home %}h2h-team{% endif %}">
+                                                {{ match.teams.home.name }}
+                                            </td>
+                                            <td class="{% if match.goals.home == match.goals.away %}text-warning{% else %}h2h-winner{% endif %}">
+                                                {{ match.goals.home }} - {{ match.goals.away }}
+                                            </td>
+                                            <td class="{% if match.teams.away.id == home_id and match.goals.away > match.goals.home %}h2h-team{% elif match.teams.home.id == home_id and match.goals.home > match.goals.away %}h2h-team{% endif %}">
+                                                {{ match.teams.away.name }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">Recent Form</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <h6>{{ fixture.teams.home.name }}</h6>
+                                                <div class="text-center mb-3">
+                                                    {% for form in home_recent|slice:":5" %}
+                                                        <span class="form-badge 
+                                                            {% if form.teams.home.id == home_id and form.goals.home > form.goals.away %}win
+                                                            {% elif form.teams.away.id == home_id and form.goals.away > form.goals.home %}win
+                                                            {% elif form.goals.home == form.goals.away %}draw
+                                                            {% else %}loss{% endif %}">
+                                                            {% if form.teams.home.id == home_id and form.goals.home > form.goals.away %}W
+                                                            {% elif form.teams.away.id == home_id and form.goals.away > form.goals.home %}W
+                                                            {% elif form.goals.home == form.goals.away %}D
+                                                            {% else %}L{% endif %}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <h6>{{ fixture.teams.away.name }}</h6>
+                                                <div class="text-center mb-3">
+                                                    {% for form in away_recent|slice:":5" %}
+                                                        <span class="form-badge 
+                                                            {% if form.teams.home.id == away_id and form.goals.home > form.goals.away %}win
+                                                            {% elif form.teams.away.id == away_id and form.goals.away > form.goals.home %}win
+                                                            {% elif form.goals.home == form.goals.away %}draw
+                                                            {% else %}loss{% endif %}">
+                                                            {% if form.teams.home.id == away_id and form.goals.home > form.goals.away %}W
+                                                            {% elif form.teams.away.id == away_id and form.goals.away > form.goals.home %}W
+                                                            {% elif form.goals.home == form.goals.away %}D
+                                                            {% else %}L{% endif %}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No head to head data available</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Standings Tab -->
+            <div class="tab-pane fade" id="standings" role="tabpanel">
+                <div class="stats-container">
+                    <h5 class="mb-4"><i class="fas fa-table me-2"></i>League Standings</h5>
+                    {% if standings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Team</th>
+                                        <th>P</th>
+                                        <th>W</th>
+                                        <th>D</th>
+                                        <th>L</th>
+                                        <th>GF</th>
+                                        <th>GA</th>
+                                        <th>GD</th>
+                                        <th>Pts</th>
+                                        <th>Form</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for team in standings.0.league.standings.0 %}
+                                        <tr class="{% if team.team.id == home_id or team.team.id == away_id %}table-primary{% endif %}">
+                                            <td>{{ team.rank }}</td>
+                                            <td>
+                                                <img src="{{ team.team.logo }}" alt="{{ team.team.name }}" style="height: 20px; width: auto; margin-right: 8px;">
+                                                {{ team.team.name }}
+                                            </td>
+                                            <td>{{ team.all.played }}</td>
+                                            <td>{{ team.all.win }}</td>
+                                            <td>{{ team.all.draw }}</td>
+                                            <td>{{ team.all.lose }}</td>
+                                            <td>{{ team.all.goals.for }}</td>
+                                            <td>{{ team.all.goals.against }}</td>
+                                            <td>{{ team.goalsDiff }}</td>
+                                            <td><strong>{{ team.points }}</strong></td>
+                                            <td>
+                                                {% for form in team.form|slice:":5" %}
+                                                    <span class="form-badge 
+                                                        {% if form == 'W' %}win
+                                                        {% elif form == 'D' %}draw
+                                                        {% else %}loss{% endif %}">
+                                                        {{ form }}
+                                                    </span>
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Standings not available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh every 60 seconds if match is in progress
+        {% if fixture.status.long != "Match Finished" and fixture.status.long != "Not Started" %}
+            setTimeout(function() {
+                location.reload();
+            }, 60000);
+        {% endif %}
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+</body>
+</html>

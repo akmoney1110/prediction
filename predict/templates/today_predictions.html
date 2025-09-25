@@ -1,0 +1,6 @@
+<h2>Today's Match Predictions</h2>
+<ul>
+    {% for p in predictions %}
+        <li>{{ p.home }} vs {{ p.away }} → {{ p.prediction }}</li>
+    {% endfor %}
+</ul>
