@@ -1,0 +1,94 @@
+{
+  "type": "cards_red_nb_v1",
+  "family": "nb",
+  "card_type": "red",
+  "mapping": {
+    "kind": "glm",
+    "home": {
+      "intercept": -0.4974469383471225,
+      "b1": -0.11180543105669852,
+      "b2": -0.029166112564841935,
+      "alpha": 0.01
+    },
+    "away": {
+      "intercept": -0.5156931978502388,
+      "b1": 0.030648008847106008,
+      "b2": 0.18319940437931667,
+      "alpha": 0.01
+    },
+    "scale": {
+      "home": 0.9999823498769723,
+      "away": 0.9999523926775161
+    },
+    "fallback_means": {
+      "home": 0.15,
+      "away": 0.15
+    },
+    "card_type": "red"
+  },
+  "mapping_kind": "glm",
+  "dispersion": {
+    "k_home_global": 200.0,
+    "k_away_global": 200.0,
+    "k_home_map": {
+      "61-2020": 200.0,
+      "61-2021": 200.0,
+      "61-2022": 200.0,
+      "61-2023": 200.0
+    },
+    "k_away_map": {
+      "61-2020": 200.0,
+      "61-2021": 200.0,
+      "61-2022": 200.0,
+      "61-2023": 200.0
+    }
+  },
+  "lines": {
+    "totals": [
+      0.5,
+      1.5
+    ],
+    "team": [
+      0.5
+    ],
+    "handicap": [
+      -1.0,
+      0.0,
+      1.0
+    ]
+  },
+  "nmax": 8,
+  "rho": -0.35,
+  "tau_raw": -0.7054654374434512,
+  "totals_calibration": {},
+  "team_calibration": {
+    "home": {},
+    "away": {}
+  },
+  "mean_floor": 0.05,
+  "training": {
+    "leagues": [
+      61
+    ],
+    "train_seasons": [
+      2020,
+      2021,
+      2022,
+      2023
+    ],
+    "val_seasons": [
+      2024
+    ],
+    "test_seasons": [
+      2025
+    ],
+    "borrowed_val_for_fit": false
+  },
+  "metrics": {
+    "val": {
+      "totals_logloss": 0.38565154257912065,
+      "totals_brier": 0.10615931089909957
+    }
+  },
+  "notes": "Cards (yellow/red/total) trained from MatchStats; GLM optional, safe constants fallback."
+}

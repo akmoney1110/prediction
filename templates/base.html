@@ -1,0 +1,1097 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golden Prediction • Premium Sports Picks</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+  <!-- Tailwind (CDN for prototyping; use your build in prod) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#0B0F16",        // primary dark
+            deep: "#0E1B2E",       // dark blue
+            gold: "#D4AF37",       // accents/logo
+            gold600: "#B9932D",
+            success: "#10B981"     // emerald
+          },
+          boxShadow: {
+            gold: "0 0 0 1px rgba(212,175,55,.30), 0 10px 40px rgba(212,175,55,.18)"
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Subtle texture + vignettes for premium depth */
+    .bg-premium {
+      background:
+        radial-gradient(1200px 600px at 70% -10%, #0E1B2E 40%, transparent 60%),
+        radial-gradient(900px 450px at 10% 0%, rgba(212,175,55,.06), transparent 60%),
+        #0B0F16;
+      position: relative;
+    }
+    .bg-premium:after {
+      content: "";
+      position: absolute; inset: 0;
+      mix-blend-mode: soft-light; opacity: .25;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.12'/></svg>");
+      pointer-events: none;
+    }
+    .btn-gold{
+      background: linear-gradient(180deg, #D4AF37, #B9932D);
+      color: #0a0a0a;
+    }
+    .btn-gold:hover{ filter: brightness(.98); box-shadow: 0 6px 28px rgba(212,175,55,.26); }
+    .card{
+      background: linear-gradient(180deg, rgba(14,27,46,.55), rgba(7,12,22,.55));
+      border: 1px solid rgba(212,175,55,.08);
+    }
+    .ring-gold{ box-shadow: 0 0 0 1px rgba(212,175,55,.35), 0 0 24px rgba(212,175,55,.18);}
+    /* Tabs (vanilla) */
+    .tab-trigger[aria-selected="true"]{
+      background:#121b2f; color:white; box-shadow: 0 0 0 2px rgba(212,175,55,.36);
+    }
+  </style>
+</head>
+{% include "_no_subscription_banner.html" %}
+<body class="min-h-screen text-white bg-premium">
+<!-- HEADER -->
+<!-- HEADER -->
+
+
+<header class="w-full  bg-ink text-white shadow-md relative z-30 pt-0">
+  <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-2">
+    <!-- Logo + Country -->
+<div class="flex items-center">
+  <img
+    src="/static/images/pepe.png"
+    alt="Golden Prediction"
+    class="block h-[70px] w-auto object-contain m-0 p-0 shrink-0"
+  />
+</div>
+{% if not request.user.is_authenticated %}
+    <!-- Login form -->
+    <form method="post"
+      action="{% url 'secure:login' %}?next={{ request.path|urlencode }}"
+      class="hidden md:flex flex-col items-end gap-1 mb-">
+  {% csrf_token %}
+  {% if messages %}
+  <div class="text-red-400 text-[10px] mt-1">
+    {% for m in messages %}<p>{{ m }}</p>{% endfor %}
+  </div>
+{% endif %}
+  <div class="flex items-center gap-2 mt-6 ">
+    <input name="username" autocomplete="username"
+           type="text" placeholder="Username or Email"
+           value="{{ form.username.value|default_if_none:'' }}"
+           class="h-6 px-2 rounded bg-deep/80 border border-white/10 text-[10px] text-white placeholder-white/40 focus:border-gold focus:ring-1 focus:ring-gold" />
+    <input name="password" autocomplete="current-password"
+           type="password" placeholder="Password"
+           class="h-6 px-2 rounded bg-deep/80 border border-white/10 text-[10px] text-white placeholder-white/40 focus:border-gold focus:ring-1 focus:ring-gold" />
+           
+    <button class="h-6 px-2 rounded bg-gold text-black font-medium text-[10px]">Login</button>
+    
+
+    <a id="openSignupBtn"
+   href="#"
+   class="h-6 inline-grid place-items-center px-2 rounded border border-gold text-black bg-gold text-xs hover:bg-gold-400 hover:text-black transition"
+   hx-get="{% url 'secure:signup' %}"
+   hx-target="#signup-modal-body"
+   hx-swap="innerHTML">
+  Register
+</a>
+
+  </div>
+
+
+
+
+
+
+
+
+
+{% if subscription.current %}
+  <p class="text-xs text-gray-400">
+    Active plan: {{ subscription.current.plan.name }} • ends {{ subscription.current.ends_at|date:"M j, Y H:i" }}
+  </p>
+{% endif %}
+
+
+
+
+
+
+
+
+<!-- HTMX + Tailwind -->
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Modal -->
+<div id="signup-modal"
+     class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-md rounded-xl bg-slate-900 shadow-lg">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <h2 class="text-sm font-semibold">Create account</h2>
+      <button id="closeSignupBtn"
+              class="hidden text-slate-300 hover:text-white text-sm"
+              aria-label="Close">✕</button>
+    </div>
+    <div id="signup-modal-body" class="p-4">
+      <!-- HTMX will inject the signup form partial here -->
+    </div>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('signup-modal');
+  const closeBtn = document.getElementById('closeSignupBtn');
+
+  function showModal(){ modal.classList.remove('hidden'); modal.classList.add('flex'); }
+  function hideModal(){ modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+  // Show the modal after HTMX swaps the form into #signup-modal-body
+  document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target && e.target.id === 'signup-modal-body') showModal();
+  });
+
+  closeBtn.addEventListener('click', hideModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideModal(); });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="flex items-center gap-4 text-xs text-white/60 mt-1">
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input name="remember_me" type="checkbox"
+             class="h-3 w-3 rounded border-white/30 bg-deep checked:bg-gold checked:border-gold focus:ring-0" />
+      <span>Keep me signed in</span>
+    </label>
+   <a href="#"
+   class="underline hover:text-emerald-400"
+   hx-get="{% url 'secure:forgot' %}?fragment=1"
+   hx-target="#forgot-modal-body"
+   hx-swap="innerHTML"
+   onclick="if(window.hideLoginModal) hideLoginModal();">
+  Forgot password?
+</a>
+
+
+
+<div id="forgot-modal"
+     class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/70 p-4"
+     data-hx-boost="false">
+  <div class="w-full max-w-md rounded-xl bg-slate-900 shadow-lg" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <h2 class="text-sm font-semibold">Reset your password</h2>
+      <button type="button" id="closeForgotBtn" class="text-slate-300 hover:text-white text-sm" aria-label="Close" data-close-forgot>✕</button>
+    </div>
+    <div id="forgot-modal-body" class="p-4"><!-- HTMX injects steps here --></div>
+  </div>
+</div>
+
+<script>
+  const forgotModal = document.getElementById('forgot-modal');
+  function showForgotModal(){ forgotModal.classList.remove('hidden'); forgotModal.classList.add('flex'); }
+  function hideForgotModal(){ forgotModal.classList.add('hidden');    forgotModal.classList.remove('flex'); }
+  window.hideForgotModal = hideForgotModal; // allow other modals to close this one
+
+  // Open modal whenever HTMX swaps into the body (any step)
+  document.body.addEventListener('htmx:afterSwap', (evt) => {
+    if (evt.detail && evt.detail.target && evt.detail.target.id === 'forgot-modal-body') showForgotModal();
+  });
+
+  // close controls
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close-forgot]')) { e.preventDefault(); hideForgotModal(); }
+  });
+  forgotModal.addEventListener('click', (e) => { if (e.target === forgotModal) hideForgotModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideForgotModal(); });
+</script>
+
+
+
+
+
+
+
+    {% if form and form.non_field_errors %}
+      <span class="text-red-400">{{ form.non_field_errors }}</span>
+    {% endif %}
+  </div>
+
+  <!-- optional: also include hidden 'next' for POST fallback -->
+  <input type="hidden" name="next" value="{{ request.path }}">
+</form>
+{% else %}
+{% with sub=user_subscription|default:subscription.current %}
+<div class="hidden md:flex items-center justify-end gap-2 mt-6 text-[12px] text-white">
+  <!-- greeting -->
+  <span class="text-white/80">Hi, {{ request.user.get_full_name|default:request.user.username }}</span>
+
+  <span class="h-4 w-px bg-white/20"></span>
+
+  <!-- membership chip / CTA -->
+  {% if sub %}
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+          <span class="text-amber-200/90">Active: {{ sub.plan.duration_days }} Days {{ sub.plan.name }} </span>
+    </span>
+    <span class="h-4 w-px bg-white/20"></span>
+    <span class="tabular-nums text-gray-300">
+      Expires {{ sub.ends_at|date:"M j, Y H:i" }} ({{ sub.ends_at|timeuntil }} left)
+    </span>
+  {% else %}
+    <a href="{% url 'subscriptions:choose' %}"
+       class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300">
+      No active membership — Choose plan
+    </a>
+  {% endif %}
+
+  <span class="h-4 w-px bg-white/20"></span>
+
+  <!-- quick links -->
+  <a href="{% url 'match-detail' match_id=123 %}" class="flex items-center gap-2 px-3 py-2 hover:bg-gray-800"> Dashboard</a>
+  <span class="h-4 w-px bg-white/20"></span>
+  <a href="{% url 'subscriptions:choose' %}" class="text-white/80 hover:text-white">Manage</a>
+  <span class="h-4 w-px bg-white/20"></span>
+  <a href="" class="text-white/80 hover:text-white">Settings</a>
+
+  <span class="h-4 w-px bg-white/20"></span>
+
+  <!-- avatar + tiny dropdown -->
+  <div class="relative" id="acc-wrap">
+    <button type="button" id="acc-btn"
+            class="flex items-center gap-1 h-6 px-2 rounded bg-gray-800/70 border border-white/10 hover:bg-gray-700">
+      <span class="inline-grid place-items-center h-5 w-5 rounded-full bg-gold text-black font-bold">
+        {{ request.user.first_name|default:request.user.username|first|upper }}
+      </span>
+      <svg class="h-3 w-3 opacity-80" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
+      </svg>
+    </button>
+    <div id="acc-menu"
+         class="hidden absolute right-0 z-50 mt-1 w-56 rounded border border-gray-700 bg-gray-900/95 shadow-xl backdrop-blur">
+      <div class="px-3 py-2 border-b border-gray-800">
+        <div class="text-[11px] font-semibold truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="text-[10px] text-gray-400 truncate">{{ request.user.email }}</div>
+        {% if sub %}
+          <div class="mt-1 text-[10px] text-gray-300">
+            Active: {{ sub.plan.name }} {{ sub.plan.duration_days }}— <span class="tabular-nums">{{ sub.ends_at|date:"M j, Y H:i" }}</span>
+          </div>
+        {% endif %}
+      </div>
+      <nav class="py-1 text-[11px] text-gray-200">
+        <a href="{% url 'match-detail' match_id=0 %}" class="block px-3 py-1.5 hover:bg-gray-800">Dashboard</a>
+        <a href="{% url 'subscriptions:choose' %}" class="block px-3 py-1.5 hover:bg-gray-800">Manage subscription</a>
+        <a href="" class="block px-3 py-1.5 hover:bg-gray-800">Account settings</a>
+        <form method="post" action="" class="border-t border-gray-800 mt-1">
+          {% csrf_token %}
+          <a href="{% url 'secure:logout' %}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+    Sign Out
+</a>
+        </form>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<script>
+  // tiny dropdown logic
+  (function(){
+    const wrap = document.getElementById('acc-wrap');
+    if(!wrap) return;
+    const btn  = document.getElementById('acc-btn');
+    const menu = document.getElementById('acc-menu');
+    const close = ()=> menu.classList.add('hidden');
+    const toggle = ()=> menu.classList.toggle('hidden');
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(); });
+    document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+  })();
+</script>
+{% endwith %}
+{% endif %}
+
+
+  </div>
+
+  <!-- Nav links -->
+  <!-- SPORT PREMIUM NAV -->
+<nav class="relative isolate bg-[#0b1220] text-white/90 shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-t border-white/5 overflow-hidden">
+  <!-- moving highlight strip -->
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 animate-[sheen_3.5s_linear_infinite] opacity-80"></div>
+
+  <!-- soft stadium glow -->
+  <div class="pointer-events-none absolute -inset-x-10 -top-24 h-48 bg-[radial-gradient(80%_60%_at_50%_0%,rgba(250,204,21,0.18),transparent_70%)]"></div>
+
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between px-4 py-2">
+      <!-- left: main nav -->
+      <div class="group/nav flex items-center gap-2 sm:gap-2 md:gap- text-[0.82rem] font-medium">
+        <!-- item -->
+        <a href="#"
+           class="relative px-3 py-2 rounded-xl transition
+                  hover:text-amber-300/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60
+                  hover:shadow-[0_0_0_2px_rgba(250,204,21,0.10),0_8px_24px_rgba(250,204,21,0.10)]
+                  after:absolute after:left-1/2 after:-translate-x-1/2 after:-bottom-[3px]
+                  after:h-[2px] after:w-0 after:rounded-full after:bg-gradient-to-r after:from-amber-400 after:to-yellow-300
+                  hover:after:w-4/5 after:transition-all">
+          <span class="inline-flex items-center gap-1">
+            <!-- ball icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] opacity-90 text-gold" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm5.5 6.7-2.4-.9-1.1-2.3a7.7 7.7 0 0 1 3.5 3.2ZM9 5.5l-1.1 2.3-2.4.9A7.7 7.7 0 0 1 9 5.5Zm-4 5.7 2 1.8-.5 2.6a7.7 7.7 0 0 1-1.5-4.4Zm4.8 7.4.7-2.5h3l.7 2.5a7.9 7.9 0 0 1-4.4 0Zm7.1-2.9-.6-2.6 2-1.8a7.7 7.7 0 0 1-1.4 4.4ZM9.6 9.1 12 7.7l2.4 1.4.6 2.7-2 1.8h-2L9 11.8l.6-2.7Z"/>
+            </svg>
+            <span class="text-gold">Sports</span>
+          </span>
+        </a>
+
+        <a href="#" class="nav-pill">📅 Fixtures</a>
+     <a href="#" class="nav-pill">Results</a>
+        
+
+
+
+
+
+
+
+
+
+<!-- 2 Odd Rollover Button -->
+<button id="btn-2odds" type="button" class="nav-pill">2 Odd Rollover</button>
+
+<style>
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display:none; align-items: center; justify-content: center; z-index: 9999; }
+  .modal-open { display:flex; }
+  .modal-card { width: min(720px, 92vw); background: #fff; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2); overflow: hidden; }
+  .modal-header { display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px; border-bottom: 1px solid #eee; gap:10px; flex-wrap:wrap; }
+  .modal-body { padding: 16px; max-height: 70vh; overflow:auto; }
+  .controls { display:flex; gap:8px; align-items:center; }
+  .pill { background:#f5f5f7; border-radius:999px; padding: 2px 8px; font-size:13px; }
+  .close-btn { background:none; border:none; font-size: 20px; line-height: 1; cursor:pointer; }
+  .legs { margin: 12px 0 0; padding: 0; list-style: none; }
+  .leg { border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .empty { padding: 16px; text-align:center; color:#666; }
+</style>
+
+<div id="twoOddsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="twoOddsTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="twoOddsTitle" style="margin:0;">Daily 2-Odds Ticket</h3>
+      <div class="controls">
+        <button id="prevDay" type="button" class="pill">◀ Prev</button>
+        <input id="ticketDate" type="date" />
+        <button id="nextDay" type="button" class="pill">Next ▶</button>
+        <button id="refresh2Odds" type="button" class="pill">Reload</button>
+        <button id="download2Odds" type="button" class="pill">Download</button>
+        <button id="download2OddsJson" type="button" class="hidden pill">Download JSON</button>
+      </div>
+      <button id="twoOddsClose" class="close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="twoOddsContent" class="empty">Pick a date to load the ticket…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const modal = document.getElementById('twoOddsModal');
+  const openBtn = document.getElementById('btn-2odds');
+  const closeBtn = document.getElementById('twoOddsClose');
+  const content = document.getElementById('twoOddsContent');
+  const dateInput = document.getElementById('ticketDate');
+  const prevBtn = document.getElementById('prevDay');
+  const nextBtn = document.getElementById('nextDay');
+  const refreshBtn = document.getElementById('refresh2Odds');
+  const ENDPOINT = "{% url 'daily-2odds-ticket-json' %}"; // your named URL
+
+  // Helpers
+  function todayUTC() {
+    const now = new Date();
+    // Build YYYY-MM-DD for UTC day
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(now.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  function addDaysISO(iso, delta) {
+    const [y,m,d] = iso.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m-1, d));
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    const yy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  function htmlesc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+  }
+
+  function openModal() {
+    if (!dateInput.value) dateInput.value = todayUTC(); // default to today UTC
+    modal.classList.add('modal-open');
+    fetchTicket(dateInput.value);
+  }
+  function closeModal() { modal.classList.remove('modal-open'); }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  dateInput.addEventListener('change', () => {
+    if (dateInput.value) fetchTicket(dateInput.value);
+  });
+  prevBtn.addEventListener('click', () => {
+    dateInput.value = addDaysISO(dateInput.value || todayUTC(), -1);
+    fetchTicket(dateInput.value);
+  });
+  nextBtn.addEventListener('click', () => {
+    dateInput.value = addDaysISO(dateInput.value || todayUTC(), +1);
+    fetchTicket(dateInput.value);
+  });
+  refreshBtn.addEventListener('click', () => {
+    fetchTicket(dateInput.value || todayUTC());
+  });
+
+  async function fetchTicket(isoDate) {
+    content.innerHTML = '<div class="pill">Loading…</div>';
+    try {
+      const url = isoDate ? `${ENDPOINT}?date=${encodeURIComponent(isoDate)}` : ENDPOINT;
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      renderTicket(data.ticket);
+    } catch (err) {
+      content.innerHTML = '<div class="empty">Failed to load ticket. Try another date.</div>';
+    }
+  }
+
+  function renderTicket(ticket) {
+    if (!ticket) {
+      content.innerHTML = '<div class="empty">No ticket for this date yet.</div>';
+      return;
+    }
+    const head = `
+      <div>
+        <div><strong>Date:</strong> ${htmlesc(ticket.date)}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
+          <span class="pill">Legs: ${ticket.legs}</span>
+          <span class="pill">Acc Prob: ${ticket.acc_probability_pct}%</span>
+          <span class="pill">Fair Odds: ${ticket.acc_fair_odds}</span>
+          <span class="pill">Bookish Odds: ${ticket.acc_bookish_odds}</span>
+          <span class="pill">Status: ${htmlesc(ticket.status)}</span>
+        </div>
+      </div>
+    `;
+    const legs = (ticket.selections || []).map((s, i) => {
+      const pPct = typeof s.p_pct === 'number'
+        ? s.p_pct.toFixed(1)
+        : (s.p ? (s.p*100).toFixed(1) : '—');
+      const market = s.market_label || `${htmlesc(s.market)} ${htmlesc(s.specifier)}`;
+      const ko = s.kickoff_label || s.kickoff_utc || '—';
+      return `
+        <li class="leg">
+          <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+            <div style="font-weight:600;">${htmlesc(s.home)} vs ${htmlesc(s.away)}</div>
+            <div class="pill">${htmlesc(ko)}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; font-size:13px;">
+            <span class="pill">${market}</span>
+            <span class="pill">p≈ ${pPct}%</span>
+            <span class="pill">fair ${('' + (s.fair_odds ?? '—')).slice(0,5)}</span>
+            ${s.result ? `<span class="pill">result: ${htmlesc(s.result)}</span>` : ''}
+            ${s.status ? `<span class="pill">status: ${htmlesc(s.status)}</span>` : ''}
+          </div>
+        </li>
+      `;
+    }).join('');
+    content.innerHTML = `${head}<ul class="legs">${legs}</ul>`;
+  }
+
+
+  const downloadBtn = document.getElementById('download2Odds');
+  const ENDPOINT_DL = "{% url 'download-daily-2odds-ticket' %}";
+
+  downloadBtn?.addEventListener('click', () => {
+    const iso = (document.getElementById('ticketDate')?.value) || '';
+    // default CSV; pass &format=json for JSON
+    const url = iso ? `${ENDPOINT_DL}?date=${encodeURIComponent(iso)}`
+                    : ENDPOINT_DL;
+    // Trigger browser download
+    window.location.href = url;
+  });
+  
+const downloadJsonBtn = document.getElementById('download2OddsJson');
+  downloadJsonBtn?.addEventListener('click', () => {
+    const iso = (document.getElementById('ticketDate')?.value) || '';
+    const url = iso
+      ? `{% url 'download-daily-2odds-ticket' %}?date=${encodeURIComponent(iso)}&format=json`
+      : `{% url 'download-daily-2odds-ticket' %}?format=json`;
+    window.location.href = url;
+  });
+
+
+
+})();
+</script>
+
+<style>
+  /* Your existing styles - unchanged */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display:none; align-items: center; justify-content: center; z-index: 9999; }
+  .modal-open { display:flex; }
+  .modal-card { width: min(720px, 92vw); background: black; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2); overflow: hidden; }
+  .modal-header { display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px; border-bottom: 1px solid #eee; gap:10px; flex-wrap:wrap; }
+  .modal-body { padding: 16px; max-height: 70vh; overflow:auto; }
+  .controls { display:flex; gap:8px; align-items:center; }
+  .pill { background:#f5f5f7; border-radius:999px; padding: 2px 8px; font-size:13px; }
+  .close-btn { background:none; border:none; font-size: 20px; line-height: 1; cursor:pointer; }
+  .legs { margin: 12px 0 0; padding: 0; list-style: none; }
+  .leg { border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .empty { padding: 16px; text-align:center; color:#666; }
+
+  /* New enhancement styles - added below your existing code */
+  .modal-header {
+    background: linear-gradient(135deg,rgb(4, 13, 34) 0%,rgb(2, 9, 26) 100%);
+    color: white;
+    border-bottom: none;
+  }
+  
+  .modal-header h3 {
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+  }
+  
+  .controls .pill {
+    background: rgba(19, 10, 10, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .controls .pill:hover {
+    background: rgba(29, 10, 10, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  #ticketDate {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: rgba(18, 3, 3, 0.1);
+    color: white;
+    font-size: 13px;
+  }
+  
+  #ticketDate::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+  }
+  
+  .close-btn {
+    color: white;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+  
+  .close-btn:hover {
+    opacity: 1;
+  }
+  
+  .leg {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background:rgb(3, 14, 24);
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  
+  .leg:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    transform: translateY(-1px);
+    border-color: #cbd5e0;
+  }
+  
+  .leg > div:first-child {
+    margin-bottom: 8px;
+  }
+  
+  .leg > div:first-child > div:first-child {
+    font-weight: 600;
+    color:rgb(223, 227, 233);
+    font-size: 15px;
+  }
+  
+  .leg .pill {
+    background: black;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    padding: 4px 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .leg .pill:first-child {
+    background:rgb(5, 20, 39);
+    border-color: #bfdbfe;
+    color:rgb(224, 226, 234);
+    font-weight: 500;
+  }
+  
+  .leg .pill:nth-child(2) {
+    background:rgb(1, 20, 7);
+    border-color: #bbf7d0;
+    color: #166534;
+    font-weight: 500;
+  }
+  
+  .ticket-header {
+    background:rgb(2, 13, 24);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solidrgb(182, 171, 24);
+  }
+  
+  .ticket-header > div:first-child {
+    font-size: 15px;
+    color:rgb(248, 248, 249);
+    margin-bottom: 8px;
+  }
+  
+  .ticket-header > div:first-child strong {
+    color:rgb(233, 236, 240);
+  }
+  
+  .ticket-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .ticket-metrics .pill {
+    background: black;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    padding: 4px 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .ticket-metrics .pill:nth-child(2) {
+    background:rgb(2, 12, 25);
+    border-color: #bfdbfe;
+    color:rgb(107, 96, 3);
+    font-weight: 500;
+  }
+  
+  .ticket-metrics .pill:nth-child(4) {
+    background:rgb(36, 31, 4);
+    border-color: #fde047;
+    color: #854d0e;
+    font-weight: 500;
+  }
+  
+  .status-pill {
+    background:rgb(4, 53, 13) !important;
+    border-color: #fde047 !important;
+    color:rgb(248, 246, 243) !important;
+  }
+  
+  .status-pill.won {
+    background:rgb(11, 119, 47) !important;
+    border-color: #86efac !important;
+    color:rgb(10, 59, 28) !important;
+  }
+  
+  .status-pill.lost {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #991b1b !important;
+  }
+  
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #64748b;
+  }
+  
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e2e8f0;
+    border-top: 2px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .match-time {
+    background:rgb(2, 27, 53) !important;
+    border-color: #cbd5e1 !important;
+    color:rgb(161, 169, 181) !important;
+    font-weight: 500;
+  }
+  
+  .result-pill {
+    font-weight: 600;
+  }
+  
+  .result-pill.won {
+    background:rgb(5, 37, 16) !important;
+    border-color: #86efac !important;
+    color: #166534 !important;
+  }
+  
+  .result-pill.lost {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #991b1b !important;
+  }
+  
+</style>
+
+<script>
+// Your existing JavaScript code remains exactly the same
+(function() {
+  const modal = document.getElementById('twoOddsModal');
+  const openBtn = document.getElementById('btn-2odds');
+  const closeBtn = document.getElementById('twoOddsClose');
+  const content = document.getElementById('twoOddsContent');
+  const dateInput = document.getElementById('ticketDate');
+  const prevBtn = document.getElementById('prevDay');
+  const nextBtn = document.getElementById('nextDay');
+  const refreshBtn = document.getElementById('refresh2Odds');
+  const ENDPOINT = "{% url 'daily-2odds-ticket-json' %}"; // your named URL
+
+  // Helpers
+  function todayUTC() {
+    const now = new Date();
+    // Build YYYY-MM-DD for UTC day
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(now.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  function addDaysISO(iso, delta) {
+    const [y,m,d] = iso.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m-1, d));
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    const yy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  function htmlesc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+  }
+
+  function openModal() {
+    if (!dateInput.value) dateInput.value = todayUTC(); // default to today UTC
+    modal.classList.add('modal-open');
+    fetchTicket(dateInput.value);
+  }
+  function closeModal() { modal.classList.remove('modal-open'); }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  dateInput.addEventListener('change', () => {
+    if (dateInput.value) fetchTicket(dateInput.value);
+  });
+  prevBtn.addEventListener('click', () => {
+    dateInput.value = addDaysISO(dateInput.value || todayUTC(), -1);
+    fetchTicket(dateInput.value);
+  });
+  nextBtn.addEventListener('click', () => {
+    dateInput.value = addDaysISO(dateInput.value || todayUTC(), +1);
+    fetchTicket(dateInput.value);
+  });
+  refreshBtn.addEventListener('click', () => {
+    fetchTicket(dateInput.value || todayUTC());
+  });
+
+  async function fetchTicket(isoDate) {
+    content.innerHTML = '<div class="loading-indicator"><div class="spinner"></div>Loading ticket data...</div>';
+    try {
+      const url = isoDate ? `${ENDPOINT}?date=${encodeURIComponent(isoDate)}` : ENDPOINT;
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      renderTicket(data.ticket);
+    } catch (err) {
+      content.innerHTML = '<div class="empty">Failed to load ticket. Try another date.</div>';
+    }
+  }
+
+  function renderTicket(ticket) {
+    if (!ticket) {
+      content.innerHTML = '<div class="empty">No ticket for this date yet.</div>';
+      return;
+    }
+    
+    // Enhanced header with better styling
+    const statusClass = ticket.status === 'WON' ? 'won' : ticket.status === 'LOST' ? 'lost' : '';
+    const head = `
+      <div class="ticket-header">
+        <div><strong>Date:</strong> ${htmlesc(ticket.date)}</div>
+        <div class="ticket-metrics">
+          <span class="pill">Legs: ${ticket.legs}</span>
+          <span class="pill">Acc Prob: ${ticket.acc_probability_pct}%</span>
+          <span class="pill">Fair Odds: ${ticket.acc_fair_odds}</span>
+          <span class="pill">Bookish Odds: ${ticket.acc_bookish_odds}</span>
+          <span class="pill status-pill ${statusClass}">Status: ${htmlesc(ticket.status)}</span>
+        </div>
+      </div>
+    `;
+    
+    const legs = (ticket.selections || []).map((s, i) => {
+      const pPct = typeof s.p_pct === 'number'
+        ? s.p_pct.toFixed(1)
+        : (s.p ? (s.p*100).toFixed(1) : '—');
+      const market = s.market_label || `${htmlesc(s.market)} ${htmlesc(s.specifier)}`;
+      const ko = s.kickoff_label || s.kickoff_utc || '—';
+      
+      // Enhanced result styling
+      const resultClass = s.result ? (s.result === 'WON' ? 'won' : s.result === 'LOST' ? 'lost' : '') : '';
+      const resultHtml = s.result ? `<span class="pill result-pill ${resultClass}">result: ${htmlesc(s.result)}</span>` : '';
+      const statusHtml = s.status ? `<span class="pill">status: ${htmlesc(s.status)}</span>` : '';
+      
+      return `
+        <li class="leg">
+          <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+            <div style="font-weight:600;">${htmlesc(s.home)} vs ${htmlesc(s.away)}</div>
+            <div class="pill match-time">${htmlesc(ko)}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; font-size:13px;">
+            <span class="pill">${market}</span>
+            <span class="pill">p≈ ${pPct}%</span>
+            <span class="pill">fair ${('' + (s.fair_odds ?? '—')).slice(0,5)}</span>
+            ${resultHtml}
+            ${statusHtml}
+          </div>
+        </li>
+      `;
+    }).join('');
+    content.innerHTML = `${head}<ul class="legs">${legs}</ul>`;
+  }
+
+  const downloadBtn = document.getElementById('download2Odds');
+  const ENDPOINT_DL = "{% url 'download-daily-2odds-ticket' %}";
+
+  downloadBtn?.addEventListener('click', () => {
+    const iso = (document.getElementById('ticketDate')?.value) || '';
+    // default CSV; pass &format=json for JSON
+    const url = iso ? `${ENDPOINT_DL}?date=${encodeURIComponent(iso)}`
+                    : ENDPOINT_DL;
+    // Trigger browser download
+    window.location.href = url;
+  });
+  
+  const downloadJsonBtn = document.getElementById('download2OddsJson');
+  downloadJsonBtn?.addEventListener('click', () => {
+    const iso = (document.getElementById('ticketDate')?.value) || '';
+    const url = iso
+      ? `{% url 'download-daily-2odds-ticket' %}?date=${encodeURIComponent(iso)}&format=json`
+      : `{% url 'download-daily-2odds-ticket' %}?format=json`;
+    window.location.href = url;
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        <a href="#" class="nav-pill"> Golden Rollover</a>
+        <a href="#" class="nav-pill">Golden High stakes</a>
+       
+     <a href="#" class="nav-pill">Promotions</a>
+        <a href="#" class="nav-pill">App</a>
+      </div>
+{% with sub=user_subscription|default:subscription.current %}
+      <!-- right: call-to-action / badge -->
+       {% if sub %}
+      <div class="hidden sm:flex items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[0.8rem]
+                     bg-gradient-to-r from-amber-400/15 to-yellow-300/10
+                     ring-1 ring-amber-300/20 shadow-[inset_0_0_0_1px_rgba(250,204,21,0.25)]
+                     backdrop-blur">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+          <span class="text-amber-200/90">Active: {{ sub.plan.name }}</span>
+        </span>
+      </div>
+      {%else%}
+      <div class="hidden sm:flex items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[0.8rem]
+                     bg-gradient-to-r from-amber-400/15 to-yellow-300/10
+                     ring-1 ring-amber-300/20 shadow-[inset_0_0_0_1px_rgba(250,204,21,0.25)]
+                     backdrop-blur">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-[16px] w-[16px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+          <span class="text-amber-200/90">Become Golden Member</span>
+        </span>
+      </div>
+      {%endif%}
+      {%endwith%}
+    </div>
+
+    <!-- subtle bottom divider with glow -->
+    <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+  </div>
+</nav>
+
+<!-- Reusable pill style -->
+<style>
+  .nav-pill{
+    position:relative; display:inline-flex; align-items:center; gap:.5rem;
+    padding:.5rem .75rem; border-radius:0.75rem; transition:all .25s ease;
+  }
+  .nav-pill:hover{
+    color:#fde68a; /* amber-200 */
+    box-shadow: 0 0 0 2px rgba(250,204,21,.12), 0 8px 24px rgba(250,204,21,.08) inset;
+    background: radial-gradient(120% 140% at 50% 120%, rgba(250,204,21,.16), rgba(253,224,71,.05) 35%, transparent 60%);
+  }
+  .nav-pill::after{
+    content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:-3px;
+    height:2px; width:0; border-radius:999px;
+    background: linear-gradient(90deg, #f59e0b, #fde047);
+    transition:width .25s ease;
+  }
+  .nav-pill:hover::after{ width:80%; }
+  @keyframes sheen{
+    0%{background-position-x: -200%}
+    100%{background-position-x: 200%}
+  }
+</style>
+<style>
+  /* ---- Brand palette (do not change markup) ---- */
+  :root{
+    --gold:     #D4AF37;   /* highlights / accents / logo */
+    --dark:     #0B0F16;   /* premium black/dark background */
+    --secondary:#0C1730;   /* dark blue secondary */
+    --white:    #FFFFFF;   /* text contrast */
+    --emerald:  #10B981;   /* winning/success (already used in your code) */
+  }
+
+  /* Global background + text */
+
+
+  /* Map “brand” utilities to GOLD (keep emerald only for WIN badges you already use) */
+  .text-brand{ color: var(--gold) !important; }
+  .bg-brand{ background-color: var(--gold) !important; }
+  .bg-brand\/20{ background-color: rgba(212,175,55,.20) !important; }
+  .hover\:bg-brand-600:hover{ background-color: #B78E2A !important; }
+  .focus\:ring-brand:focus{ box-shadow: 0 0 0 2px var(--gold) !important; }
+  .focus\:border-brand:focus{ border-color: var(--gold) !important; }
+  .border-brand{ border-color: var(--gold) !important; }
+
+  /* Premium dark backgrounds currently using gray-* */
+  .bg-gray-900\/60{ background-color: rgba(11,15,22,.90) !important; } /* main cards */
+  .bg-gray-800\/70{ background-color: rgba(12,23,48,.70) !important; } /* secondary blue */
+  .bg-gray-800\/50{ background-color: rgba(12,23,48,.50) !important; }
+  .bg-gray-700,
+  .bg-gray-700\/50{ background-color: rgba(12,23,48,.55) !important; }  /* footers/rows */
+  .bg-gray-800{ background-color: var(--secondary) !important; }
+
+  /* Borders — subtle cool tone */
+  .border-gray-800{ border-color: rgba(35,50,80,.8) !important; }
+  .divide-gray-800 > :not([hidden]) ~ :not([hidden]){ border-color: rgba(35,50,80,.8) !important; }
+
+  /* Table header row */
+  .bg-gray-800\/40{ background-color: rgba(12,23,48,.40) !important; }
+  .bg-gray-800\/30{ background-color: rgba(12,23,48,.30) !important; }
+  thead.bg-gray-800\/50{ background-color: rgba(12,23,48,.50) !important; }
+
+  /* Text grays → white tints for contrast */
+  .text-gray-300{ color: rgba(255,255,255,.88) !important; }
+  .text-gray-400{ color: rgba(255,255,255,.70) !important; }
+  .text-gray-500{ color: rgba(255,255,255,.55) !important; }
+  .text-gray-600{ color: rgba(255,255,255,.45) !important; }
+
+  /* Inputs/badges that used gray backgrounds */
+  .bg-gray-700.text-gray-100{ background-color: rgba(12,23,48,.65) !important; color: var(--white) !important; }
+  .bg-white{ background: var(--white) !important; } /* keep logos readable */
+</style>
+
+</header>
+
+
+
+{%block content%}     {%endblock%}
+</body>
+</html

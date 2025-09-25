@@ -1,0 +1,55 @@
+{
+  "type": "cs_v1",
+  "family": "poiss",
+  "rho": -0.17266376715336657,
+  "tau_raw": -0.04629999619865604,
+  "nmax": 10,
+  "lines": {
+    "totals": [
+      1.5,
+      2.5,
+      3.5
+    ],
+    "handicap": [
+      -1.0,
+      -0.5,
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "dispersion": {
+    "k_home_global": null,
+    "k_away_global": null,
+    "k_home_map": {},
+    "k_away_map": {}
+  },
+  "mu_anchor_scale": {
+    "home": 1.0747568799799794,
+    "away": 0.9262329073291772
+  },
+  "mean_floor": 0.2,
+  "training": {
+    "leagues": [
+      61
+    ],
+    "train_seasons": [
+      2020,
+      2021,
+      2022,
+      2023
+    ],
+    "val_seasons": [
+      2024
+    ],
+    "test_seasons": [
+      2025
+    ]
+  },
+  "metrics": {
+    "val": {
+      "totals_logloss": 0.6039259893455129,
+      "totals_brier": 0.20800700400746733
+    }
+  }
+}

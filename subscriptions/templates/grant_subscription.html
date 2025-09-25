@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>Grant Subscription to {{ queryset|length }} user(s)</h1>
+<p>Select a plan to grant to the selected users:</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    
+    <input type="hidden" name="action" value="grant_subscription_to_users">
+    <input type="submit" name="apply" value="Grant Subscription">
+    <a href="." class="button cancel-link">Cancel</a>
+</form>
+
+<ul>
+    {% for user_sub in queryset %}
+    <li>{{ user_sub.user }} ({{ user_sub.user.email }})</li>
+    {% endfor %}
+</ul>
+{% endblock %}

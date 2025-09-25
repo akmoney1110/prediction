@@ -1,0 +1,2 @@
+label,n,mu_home_mean,mu_away_mean,bp_c,logloss_1x2,brier_1x2,maxerr_1x2_sum,maxerr_dc_identity,maxerr_ou_complement,maxerr_oddeven_complement
+test,40,1.4850218295906685,1.4881935893347278,0.0,1.0858699398786542,0.6571580139883143,4.440892098500626e-16,0.0,0.0,4.440892098500626e-16

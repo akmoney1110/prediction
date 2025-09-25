@@ -1,0 +1,15 @@
+{
+  "type": "htft",
+  "goals_artifact_used": "artifacts/goals/artifacts.goals.json",
+  "pi1_home": 0.45,
+  "pi1_away": 0.45,
+  "use_half_corr": false,
+  "rho": 0.0,
+  "bp_c": 0.0,
+  "max_goals": 10,
+  "calibration": {
+    "ht_onextwo": null,
+    "gbh": null
+  },
+  "metrics": {}
+}

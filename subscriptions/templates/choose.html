@@ -1,0 +1,31 @@
+{# templates/subscriptions/choose.html #}
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto mt-8 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 text-white">
+  <h1 class="text-lg font-semibold mb-1">Golden Membership</h1>
+  <p class="text-sm text-gray-300 mb-4">
+    Country on file: <span class="font-medium">{{ country }}</span>
+  </p>
+
+  <ul class="space-y-3">
+    {% for p in plans %}
+      <li class="bg-black/30 border border-gray-800 rounded-lg p-4 flex items-center justify-between">
+        <div>
+          <div class="text-sm font-semibold">{{ p.name }}</div>
+          <div class="text-xs text-gray-400">{{ p.price_label }}</div>
+        </div>
+        {# templates/subscriptions/choose.html #}
+<form method="post" action="{% url 'subscriptions:checkout' p.code %}">
+  {% csrf_token %}
+  <button class="px-3 py-1.5 rounded-md bg-brand text-black font-semibold hover:bg-brand-600">
+    Pay & Activate
+  </button>
+</form>
+
+      </li>
+    {% empty %}
+      <li class="text-sm text-gray-400">No plans available.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
