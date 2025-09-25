@@ -1,0 +1,16 @@
+<form method="post"
+      hx-post="{% url 'secure:forgot' %}?fragment=1"
+      hx-target="#forgot-modal-body"
+      hx-swap="innerHTML"
+      class="space-y-4">
+  {% csrf_token %}
+  <p class="text-sm text-slate-300">Enter your account email. If it exists, we’ll send a 6-digit code.</p>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.email.id_for_label }}">Email</label>
+    {{ form.email }}
+    {% if form.email.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.email.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <button class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-sm font-medium">Send code</button>
+</form>

@@ -1,0 +1,66 @@
+{# templates/secure/_signup_form.html #}
+{% if messages %}
+  <div class="text-red-400 text-[10px] mt-1">
+    {% for m in messages %}<p>{{ m }}</p>{% endfor %}
+  </div>
+{% endif %}
+
+<form method="post"
+      action="{% url 'secure:signup' %}"
+      hx-post="{% url 'secure:signup' %}?fragment=1"
+      hx-target="#signup-modal-body"
+      hx-swap="innerHTML"
+      class="space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="rounded border border-red-500/30 bg-red-500/10 text-red-300 p-2 text-xs">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.username.id_for_label }}">Username</label>
+    {{ form.username }}
+    {% if form.username.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.username.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.email.id_for_label }}">Email</label>
+    {{ form.email }}
+    {% if form.email.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.email.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.country.id_for_label }}">Country</label>
+    {{ form.country }}
+    {% if form.country.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.country.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.password1.id_for_label }}">Password</label>
+    {{ form.password1 }}
+    {% if form.password1.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.password1.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.password2.id_for_label }}">Confirm Password</label>
+    {{ form.password2 }}
+    {% if form.password2.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.password2.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <button class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition text-sm font-medium">
+    Create account
+  </button>
+</form>
+<script>
+  function showSignupModal(){
+    const modal = document.getElementById('signup-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  }
+  // Re-show modal after any swap into its body (e.g., on error)
+  document.body.addEventListener('htmx:afterSwap', (evt) => {
+    if (evt.detail && evt.detail.target && evt.detail.target.id === 'signup-modal-body') {
+      showSignupModal();
+    }
+  });
+</script>

@@ -1,0 +1,83 @@
+{% load widget_tweaks %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sign up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CDN (dev) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <main class="max-w-3xl mx-auto p-6">
+    <div class="max-w-md mx-auto p-6 bg-slate-900/40 rounded-xl shadow-lg">
+      <h1 class="text-xl font-semibold mb-4">Create account</h1>
+
+      {# Show any non-field form errors at the top #}
+      {% if form.non_field_errors %}
+        <div class="mb-4 rounded border border-red-500/30 bg-red-500/10 text-red-300 p-3 text-sm">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'secure:signup' %}" class="space-y-4">
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div>
+          <label class="block text-sm mb-1" for="{{ form.username.id_for_label }}">Username</label>
+          {% render_field form.username class+="w-full rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="yourname" autocomplete="username" %}
+          {% if form.username.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.username.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label class="block text-sm mb-1" for="{{ form.email.id_for_label }}">Email</label>
+          {% render_field form.email class+="w-full rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="you@example.com" autocomplete="email" %}
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.email.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Country -->
+        <div>
+          <label class="block text-sm mb-1" for="{{ form.country.id_for_label }}">Country</label>
+          {% render_field form.country class+="w-full rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" %}
+          {% if form.country.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.country.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-sm mb-1" for="{{ form.password1.id_for_label }}">Password</label>
+          {% render_field form.password1 class+="w-full rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="••••••••" autocomplete="new-password" %}
+          {% if form.password1.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.password1.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label class="block text-sm mb-1" for="{{ form.password2.id_for_label }}">Confirm Password</label>
+          {% render_field form.password2 class+="w-full rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="••••••••" autocomplete="new-password" %}
+          {% if form.password2.errors %}
+            <p class="mt-1 text-xs text-red-400">{{ form.password2.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <button class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition text-sm font-medium">
+          Create account
+        </button>
+      </form>
+
+      <p class="text-sm mt-4">
+        Already have an account?
+        <a class="underline decoration-emerald-500 hover:text-emerald-400" href="{% url 'secure:login' %}">Sign in</a>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

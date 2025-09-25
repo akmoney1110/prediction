@@ -1,0 +1,23 @@
+<form method="post"
+      hx-post="{% url 'secure:forgot_verify' %}?fragment=1"
+      hx-target="#forgot-modal-body"
+      hx-swap="innerHTML"
+      class="space-y-4">
+  {% csrf_token %}
+  <p class="text-sm text-slate-300">We sent a 6-digit code to <span class="text-slate-100">{{ email }}</span>. It expires in 10 minutes.</p>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.code.id_for_label }}">Code</label>
+    {{ form.code }}
+    {% if form.code.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.code.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <button class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-sm font-medium">Verify</button>
+
+  <p class="text-xs mt-2">
+    Didn’t get it? <a href="#" class="underline"
+      hx-get="{% url 'secure:forgot' %}?fragment=1"
+      hx-target="#forgot-modal-body"
+      hx-swap="innerHTML">Request a new code</a>
+  </p>
+</form>

@@ -1,0 +1,54 @@
+{# templates/secure/_login_form.html #}
+<form method="post"
+      action="{% url 'secure:login' %}"
+      hx-post="{% url 'secure:login' %}"
+      hx-target="#login-modal-body"
+      hx-swap="innerHTML"
+      class="space-y-4">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="rounded border border-red-500/30 bg-red-500/10 text-red-300 p-2 text-xs">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.username.id_for_label }}">Username or Email</label>
+    {{ form.username }}
+    {% if form.username.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.username.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="block text-xs mb-1" for="{{ form.password.id_for_label }}">Password</label>
+    {{ form.password }}
+    {% if form.password.errors %}<p class="mt-1 text-[11px] text-red-400">{{ form.password.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <label class="inline-flex items-center gap-2 text-sm">
+    {{ form.remember_me }}
+    <span>Keep me signed in</span>
+  </label>
+
+  {% if request.GET.next %}
+    <input type="hidden" name="next" value="{{ request.GET.next }}">
+  {% endif %}
+
+  <button class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition text-sm font-medium">
+    Sign in
+  </button>
+
+  <div class="flex justify-between text-xs text-slate-300">
+    <a class="underline hover:text-emerald-400" href="{% url 'secure:forgot' %}">Forgot password?</a>
+
+    <!-- Open the signup modal from here (optional) -->
+    <a href="#"
+       class="underline hover:text-emerald-400"
+       hx-get="{% url 'secure:signup' %}?fragment=1"
+       hx-target="#signup-modal-body"
+       hx-swap="innerHTML"
+       onclick="if(window.hideLoginModal) hideLoginModal();">
+      Create account
+    </a>
+  </div>
+</form>

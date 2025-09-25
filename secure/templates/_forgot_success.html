@@ -1,0 +1,14 @@
+<div class="space-y-4">
+  <p class="text-sm text-emerald-300">Your password has been reset successfully.</p>
+  <div class="flex gap-2">
+    <a href="#"
+       class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-sm font-medium text-center"
+       hx-get="{% url 'secure:login' %}?fragment=1"
+       hx-target="#login-modal-body"
+       hx-swap="innerHTML"
+       onclick="if(window.hideForgotModal) hideForgotModal();">
+      Sign in
+    </a>
+    <button type="button" class="flex-1 py-2 rounded-lg border border-white/20 text-sm" onclick="hideForgotModal()">Close</button>
+  </div>
+</div>
