@@ -1,0 +1,123 @@
+{# templates/tickets/two_odds_builder_range.html #}
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Build Tickets (Range)</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; padding: 24px; background:#0c0f14; color:#eaf0ff;}
+    .wrap { max-width: 1100px; margin: 0 auto; display:grid; grid-template-columns: 360px 1fr; gap: 20px; }
+    .card { background:#131a24; border:1px solid #1f2836; border-radius:12px; padding:16px; }
+    label { display:block; font-size:12px; color:#9fb0cc; margin-top:8px; }
+    input { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #29374c; background:#0f141c; color:#eaf0ff;}
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    button { padding:10px 12px; border-radius:10px; border:1px solid #2a384d; background:#0f1621; color:#d7e4ff; cursor:pointer; }
+    .btn-primary { background:#1b2a40; border-color:#35507a; }
+    .bar { display:flex; gap:8px; margin-top:12px; align-items:center; }
+    .muted { color:#9fb0cc; font-size:12px; }
+    .spinner.htmx-request { display:inline-block; }
+    .spinner { display:none; width:14px; height:14px; border:2px solid #2a384d; border-top-color:#42d392; border-radius:50%; animation:spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg);} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <form id="range-form"
+            hx-get="{% url 'two_odds_preview_range_frag' %}"
+            hx-target="#preview"
+            hx-swap="innerHTML"
+            hx-include="#range-form"
+            hx-trigger="change delay:300ms, submit">
+        {% csrf_token %}
+        <div class="row">
+          <div>
+            <label>Start date (UTC)</label>
+            <input type="date" name="start" value="{{ init_start }}">
+          </div>
+          <div>
+            <label>End date (UTC)</label>
+            <input type="date" name="end" value="{{ init_end }}">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Target odds</label>
+            <input type="number" step="0.01" name="target_odds" value="{{ init_target_odds }}">
+          </div>
+          <div>
+            <label>Over tolerance (+%)</label>
+            <input type="number" step="0.01" name="over_tolerance" value="{{ init_over_tol }}">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Min legs</label>
+            <input type="number" name="min_legs" value="{{ init_min_legs }}">
+          </div>
+          <div>
+            <label>Max legs</label>
+            <input type="number" name="max_legs" value="{{ init_max_legs }}">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Min p (0..1)</label>
+            <input type="number" step="0.01" name="min_p" value="{{ init_min_p }}">
+          </div>
+          <div>
+            <label>Max fair odds</label>
+            <input type="number" step="0.01" name="max_fair_odds" value="{{ init_max_fair }}">
+          </div>
+        </div>
+
+        <label>Attempts</label>
+        <input type="number" name="attempts" value="{{ init_attempts }}">
+
+        <div class="bar">
+          <button type="submit" class="btn-primary">Preview range</button>
+          <button type="button" id="save-range-btn">Save range to my account</button>
+          <div class="spinner htmx-indicator"></div>
+          <div id="save-msg" class="muted"></div>
+        </div>
+      </form>
+    </div>
+
+    <div id="preview" class="card"
+         hx-get="{% url 'two_odds_preview_range_frag' %}?start={{ init_start }}&end={{ init_end }}&target_odds={{ init_target_odds }}&over_tolerance={{ init_over_tol }}&min_legs={{ init_min_legs }}&max_legs={{ init_max_legs }}&min_p={{ init_min_p }}&max_fair_odds={{ init_max_fair }}&attempts={{ init_attempts }}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+      <!-- range list fragment renders here -->
+    </div>
+  </div>
+
+  <script>
+    const saveBtn = document.getElementById('save-range-btn');
+    const form = document.getElementById('range-form');
+    const saveMsg = document.getElementById('save-msg');
+
+    function getCSRF(){ const el = form.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+
+    saveBtn.addEventListener('click', async () => {
+      saveMsg.textContent = '';
+      const fd = new FormData(form);
+      const res = await fetch("{% url 'two_odds_save_range' %}", {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-CSRFToken': getCSRF() }
+      });
+      const json = await res.json();
+      if (json.ok) {
+        saveMsg.textContent = `Saved ${json.saved} day(s), ${json.empty} empty.`;
+      } else {
+        saveMsg.textContent = json.error || 'Save failed';
+      }
+    });
+  </script>
+</body>
+</html>

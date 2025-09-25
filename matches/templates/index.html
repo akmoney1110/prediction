@@ -1,0 +1,2101 @@
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% load static %}
+{% block content %}
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Golden Prediction • Premium Sports Picks</title>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<!-- Tailwind (CDN for prototyping; use your build in prod) -->
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: "#0B0F16",        // primary dark
+          deep: "#0E1B2E",       // dark blue
+          gold: "#D4AF37",       // accents/logo
+          gold600: "#B9932D",
+          success: "#10B981"     // emerald
+        },
+        boxShadow: {
+          gold: "0 0 0 1px rgba(212,175,55,.30), 0 10px 40px rgba(212,175,55,.18)"
+        }
+      }
+    }
+  }
+</script>
+<script>
+// Minimal starter map — extend with your real IDs
+const LEAGUE_MAP = {
+  128: "Argentina Liga Profesional",
+  129: "Argentina Liga ",
+  39:  "England Premier League",
+  140: "Spain La Liga",
+  78:  "Germany Bundesliga",
+  135: "Italy Serie A",
+  61:  "France Ligue 1",
+  72: "Brazilian league",
+  71: "Brazilian league",
+  // ...add more as you need
+};
+</script>
+<!-- Add this before your script tag -->
+
+
+<!-- DEBUG: Check what's actually in the variable -->
+
+
+
+
+
+{% if subscription.has_active_subscription %}
+
+
+
+<!-- Font Awesome (icons) -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<style>
+  :root{
+    /* palette */
+    --black:#0b0d12;
+    --bg:#0c0f14;               /* page */
+    --card:#0e1521;             /* primary card (darker) */
+    --card-2:#101827;           /* secondary card (deep blue) */
+    --stroke:#1f2a40;           /* borders */
+    --ink:#ffffff;              /* text */
+    --muted:#a8b7d4;            /* secondary text */
+    --gold:#d4af37;             /* highlight */
+    --gold-2:#f6da72;           /* warm gold glow */
+    --emerald:#34d399;          /* success */
+    --btn:#0f1621;
+    --btnb:#2a384d;
+    --btnh:#3a4a66;
+    --pri:#11213b;              /* primary button (deep blue) */
+    --prib:#35507a;
+    --shadow:0 20px 50px rgba(0,0,0,.45);
+  }
+
+
+
+  /* page wrap + header bar */
+  .wrap{max-width:1150px;margin:28px auto;padding:0 16px;}
+  .header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;margin:0 0 14px;
+    background:linear-gradient(180deg,var(--card-2),var(--card));
+    border:1px solid color-mix(in oklab, var(--gold) 20%, var(--stroke));
+    border-radius:14px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .header:after{
+    content:"";position:absolute;inset:-1px;
+    background:radial-gradient(1200px 120px at 0% -10%, color-mix(in oklab, var(--gold-2) 15%, transparent), transparent 60%);
+    pointer-events:none;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.3px;
+    font-size:15px;
+  }
+  .brand .logo-dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 16px var(--gold-2), 0 0 4px var(--gold);
+  }
+  .brand .sub{color:var(--muted);font-weight:600}
+  .legend{display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+  .legend .tag{
+    display:inline-flex;gap:8px;align-items:center;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid var(--stroke);background:color-mix(in oklab, var(--card-2) 70%, transparent);
+  }
+  .legend .tag i{color:var(--gold)}
+
+  /* card */
+  .card{
+    background:linear-gradient(180deg, var(--card-2), var(--card));
+    border:1px solid var(--stroke);border-radius:14px;padding:16px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .card:before{
+    content:"";position:absolute;inset:-1px;
+    background:radial-gradient(900px 90px at 10% -20%, color-mix(in oklab, var(--gold-2) 12%, transparent), transparent 60%);
+    pointer-events:none;
+  }
+
+  label{
+    display:block;font-size:12px;color:var(--muted);margin-top:8px;font-weight:600;
+    letter-spacing:.02em;
+  }
+  label .ico{color:var(--gold);margin-right:8px}
+  input{
+    width:100%;height:30px;padding:8px 12px;border-radius:10px;
+    border:1px solid color-mix(in oklab, var(--stroke) 85%, var(--gold) 15%);
+    background: linear-gradient(180deg,#0e1622,#0b111a);
+    color:var(--ink);outline:none;transition:border-color .2s, box-shadow .2s, transform .05s;
+  }
+  input::placeholder{color:#7b8cac}
+  input:hover{border-color:color-mix(in oklab, var(--stroke), var(--gold) 30%)}
+  input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px color-mix(in oklab, var(--gold) 20%, transparent);
+  }
+  input:active{transform:translateY(1px)}
+
+  /* 3-across layout using 9 cols + span 3 per field */
+ .row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 9 slots */
+  gap: 12px;
+}
+.row > div {
+  grid-column: span 1; /* each takes 1 slot */
+}
+
+  /* responsive */
+  @media (max-width: 980px){ .row{grid-template-columns: repeat(6, 1fr);} .row > div{grid-column:span 3} }
+  @media (max-width: 720px){ .row{grid-template-columns: repeat(2, 1fr);} .row > div{grid-column:span 2} }
+  @media (max-width: 520px){ .row{grid-template-columns: 1fr;} .row > div{grid-column:span 1} }
+
+  .bar{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  .btn{
+    padding:12px 14px;border-radius:12px;width:100%;height:30px;
+    border:1px solid var(--btnb);background:var(--btn);color:#eaf2ff;
+    cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px;
+    font-weight:700;letter-spacing:.02em;justify-content:center;
+    transition:border-color .2s, transform .06s, box-shadow .2s, background .2s;
+  }
+  .btn:hover{border-color:var(--btnh);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .btn:active{transform:translateY(1px)}
+  .btn i{color:var(--gold)}
+
+  .btn-primary{
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--pri) 85%, black 15%), var(--pri));
+    border-color: color-mix(in oklab, var(--gold) 45%, var(--prib));
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 35%, transparent) inset,
+                0 8px 24px rgba(0,0,0,.45);
+  }
+  .btn-primary:hover{
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold) inset, 0 12px 28px rgba(0,0,0,.55);
+  }
+
+  .muted{color:var(--muted);font-size:12px}
+  .gold{color:var(--gold)}
+  .emerald{color:var(--emerald)}
+
+  .spinner{display:none;width:16px;height:16px;border:2px solid #2a384d;border-top-color:var(--gold);border-radius:50%;animation:spin .9s linear infinite}
+  .spinner.htmx-request{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* --- Modal (native <dialog>) --- */
+  dialog#preview-modal{
+    border:1px solid color-mix(in oklab, var(--stroke) 85%, var(--gold) 15%);
+    border-radius:16px;padding:0;width:min(980px, 96vw);
+    color:var(--ink);
+    background:linear-gradient(180deg, #121a28, #0f1520);
+    box-shadow:0 30px 90px rgba(0,0,0,.65);
+  }
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  .modal-head,.modal-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border-bottom:1px solid var(--stroke)
+  }
+  .modal-foot{border-top:1px solid var(--stroke);border-bottom:none}
+  .modal-title{
+    font-weight:900;letter-spacing:.3px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .modal-title i{color:var(--gold)}
+  .modal-body{max-height:70vh;overflow:auto;padding:12px 16px}
+  .x{
+    appearance:none;border:1px solid color-mix(in oklab, var(--btnb) 80%, var(--gold) 20%);
+    background:linear-gradient(180deg,#0e1622,#0b111a);color:var(--ink);
+    border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;
+  }
+  .gold-accent {
+            color: var(--gold);
+        }
+
+   .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            background: var(--gold);
+            color: #0a0a0a;
+        }      
+  .x:hover{border-color:var(--gold)}
+</style>
+
+<div class="wrap">
+  <!-- Premium header -->
+  <div class="header">
+    <div class="brand text-sm">
+      <span class="logo-dot"></span>
+      <span><i class="fas fa-crown gold-accent"></i> Golden Odds Calculator <span class="badge">PRO</span> <span class="sub">Builder</span></span>
+    </div>
+    <div class="legend">
+      <span class="tag"><i class="fas fa-calendar-day"></i> Start</span>
+      <span class="tag"><i class="fas fa-calendar-check"></i> End</span>
+      <span class="tag"><i class="fas fa-target"></i> Target Odds</span>
+      <span class="tag"><i class="fas fa-percentage"></i> Tolerance</span>
+      <span class="tag"><i class="fas fa-sliders-h"></i> Legs</span>
+      <span class="tag"><i class="fas fa-signal"></i> Confidence</span>
+    </div>
+  </div>
+<style>
+/* Change calendar icon color */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+    /* Blue color - adjust hue-rotate for different colors */
+}
+input[type="number"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+    /* Blue color - adjust hue-rotate for different colors */
+}
+
+/* Alternative using opacity */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+}
+input[type="number"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+}
+
+/* Specific color using SVG filter */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(71%) sepia(27%) saturate(671%) hue-rotate(5deg) brightness(93%) contrast(91%);* Red color example */
+}
+input[type="number"]::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(71%) sepia(27%) saturate(671%) hue-rotate(5deg) brightness(93%) contrast(91%);* Red color example */
+}
+</style>
+
+  <div class="card">
+    <form id="range-form">
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label><i class=" fas fa-calendar-day ico"></i>Start date (UTC)</label>
+          <input class="text-gray-600" type="date" name="start" value="{{ init_start }}" placeholder="YYYY-MM-DD" title="First UTC day to build">   </div>
+        <div>
+          <label><i class="fas fa-calendar-check ico"></i>End date (UTC)</label>
+          <input class="text-gray-600" type="date" name="end" value="{{ init_end }}" placeholder="YYYY-MM-DD" title="Last UTC day to build" >
+        </div>
+        <div>
+          <label><i class="fas fa-target ico"></i>Target odds</label>
+          <input type="number" step="0.01" name="target_odds" value="{{ init_target_odds }}" placeholder="e.g. 2.00" title="Desired accumulator book odds">
+        </div>
+
+        <div>
+          <label><i class="fas fa-percentage ico"></i>Over Distance</label>
+          <input type="number" step="0.01" name="over_tolerance" value="{{ init_over_tol }}" placeholder="e.g. 0.15" title="Allowable over-shoot as a fraction (0.15 = +15%)">
+        </div>
+        <div>
+          <label><i class="fas fa-sliders-h ico"></i>Min legs</label>
+          <input type="number" name="min_legs" value="{{ init_min_legs }}" placeholder="≥ 1" title="Minimum legs">
+        </div>
+        <div>
+          <label><i class="fas fa-sliders-h ico"></i>Max legs</label>
+          <input type="number" name="max_legs" value="{{ init_max_legs }}" placeholder="≤ 12" title="Maximum legs">
+        </div>
+
+
+
+
+
+
+
+
+
+        <div>
+          <label><i class="fas fa-signal ico"></i>Min p (0..1)</label>
+          <input type="number" step="0.01" name="min_p" value="{{ init_min_p }}" placeholder="e.g. 0.60" title="Minimum model probability per leg">
+        </div>
+        <div>
+          <label><i class="fas fa-percentage ico"></i>Max fair odds</label>
+          <input type="number" step="0.01" name="max_fair_odds" value="{{ init_max_fair }}" placeholder="e.g. 1.60" title="Upper bound of margin-free (fair) odds per leg">
+        </div>
+
+        <div>
+          <label><i class="fas fa-sync-alt ico"></i>Attempts</label>
+          <input type="number" name="attempts" value="{{ init_attempts }}" placeholder="e.g. 500" title="How many random combos to try">
+        </div>
+      </div>
+
+      <div class="bar">
+        <!-- PREVIEW opens modal -->
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="document.getElementById('preview-modal').showModal()"
+          hx-get="{% url 'two_odds_preview_range_frag' %}"
+          hx-target="#modal-body"
+          hx-include="#range-form"
+          hx-swap="innerHTML"
+          hx-indicator="#preview-spinner">
+          <i class="fas fa-bullseye"></i>
+          Preview range
+        </button>
+
+        <div id="preview-spinner" class="spinner" aria-hidden="true"></div>
+
+        <a href="{% url 'my_two_odds_list' %}" class="btn">
+          <i class="fas fa-folder-open"></i>
+          My Saved Tickets
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal -->
+<dialog id="preview-modal" aria-labelledby="preview-title">
+  <div class="modal-head">
+    <div class="modal-title" id="preview-title">
+      <i class="fas fa-calendar-week"></i>
+      Preview (range)
+    </div>
+    <!-- added id so your script can close it -->
+  
+    <button type="button" class="x" onclick="document.getElementById('preview-modal').close()">
+                <i class="as fa-xmark gold"></i> Close
+            </button>
+  </div>
+
+  <div id="modal-body"
+       class="modal-body"
+       hx-on::afterSwap="document.getElementById('preview-modal').showModal()"
+       hx-on::responseError="this.innerHTML = `<div class='muted'>Error loading preview.</div>`">
+  </div>
+
+  <div class="modal-foot">
+    <div class="muted" id="save-msg"></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div id="save-spinner" class="spinner" aria-hidden="true"></div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        hx-post="{% url 'two_odds_save_range' %}"
+        hx-include="#range-form"
+        hx-target="#save-msg"
+        hx-swap="innerHTML"
+        hx-indicator="#save-spinner">
+        <i class="fas fa-cloud-upload-alt"></i>
+        Save range to my account
+      </button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const dlg = document.getElementById('preview-modal');
+  const bodyEl = document.getElementById('modal-body');
+  const closeBtn = document.getElementById('modal-close');
+
+  // Open the modal after HTMX swaps in preview content (safety net)
+  document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target === bodyEl && typeof dlg.showModal === 'function') {
+      dlg.showModal();
+    }
+  });
+
+  // Close button
+  closeBtn.addEventListener('click', () => dlg.close());
+
+  // Close on backdrop click
+  dlg.addEventListener('click', (e) => {
+    const r = dlg.getBoundingClientRect();
+    const inBox = r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right;
+    if (!inBox) dlg.close();
+  });
+</script>
+
+
+{% else %}
+  <!-- teaser or upsell -->
+  <div class="rounded-lg border border-gray-800 bg-gray-900/50 p-4 text-gray-200">
+    <p class="text-sm mb-2">Unlock daily premium picks with Golden Membership.</p>
+    <a href="{% url 'subscriptions:choose' %}" class="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-black hover:bg-brand-600">
+      See plans
+    </a>
+  </div>
+{% endif %}
+
+
+
+
+
+
+
+<style>
+  /* Subtle texture + vignettes for premium depth */
+
+  .bg-premium {
+    background:
+      radial-gradient(1200px 600px at 70% -10%, #0E1B2E 40%, transparent 60%),
+      radial-gradient(900px 450px at 10% 0%, rgba(212,175,55,.06), transparent 60%),
+      #0B0F16;
+    position: relative;
+  }
+  .bg-premium:after {
+    content: "";
+    position: absolute; inset: 0;
+    mix-blend-mode: soft-light; opacity: .25;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.12'/></svg>");
+    pointer-events: none;
+  }
+  .btn-gold{
+    background: linear-gradient(180deg, #D4AF37, #B9932D);
+    color: #0a0a0a;
+  }
+  .btn-gold:hover{ filter: brightness(.98); box-shadow: 0 6px 28px rgba(212,175,55,.26); }
+  .card{
+    background: linear-gradient(180deg, rgba(14,27,46,.55), rgba(7,12,22,.55));
+    border: 1px solid rgba(212,175,55,.08);
+  }
+  .ring-gold{ box-shadow: 0 0 0 1px rgba(212,175,55,.35), 0 0 24px rgba(212,175,55,.18);}
+  /* Tabs (vanilla) */
+  .tab-trigger[aria-selected="true"]{
+    background:#121b2f; color:white; box-shadow: 0 0 0 2px rgba(212,175,55,.36);
+  }
+</style>
+
+<!-- RECENT PREMIUM RESULTS -->
+<section class="max-w-6xl mx-auto px-4 mt-4">
+  <div class="relative rounded-2xl bg-ink text-white shadow-xl">
+    
+    <!-- Top-left tag -->
+    <div class="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold text-black text-xs font-semibold uppercase">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2l2.39 4.85L20 7.27l-3.9 3.8.92 5.36L12 14.77 7 16.43l.9-5.36L4 7.27l5.61-.42L12 2z"/>
+      </svg>
+      Golden
+      <span class="text-black/90">Sports Predictions</span>
+    </div>
+
+    <div class="rounded-2xl bg-deep/90 text-white shadow-inner">
+      <div class="px-5 pt-1">
+        <h2 class="text-center text-xl md:text-xl font-semibold">
+          Latest Results — <span class="text-gold">Golden Member</span> Everyday Rollover
+        </h2>
+      </div>
+
+      <!-- Scrollable rail -->
+      <div class="mt-1  px-3 sm:px-5 overflow-x-auto">
+        <ul id="rollover-rail"
+            class="flex  gap-6 min-w-max py-2 px-1">
+          <!-- JS or template will inject <li> items here -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Status Icons -->
+<template id="icon-win">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+       class="w-4 h-4 p-1 rounded-full bg-emerald-600 text-white">
+    <path fill="currentColor" d="M9.0 16.2 4.8 12l1.4-1.4 2.8 2.8 8.3-8.3L18.7 6z"/>
+  </svg>
+</template>
+<template id="icon-loss">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+       class="w-4 h-4 p-1 rounded-full bg-gray-500 text-white">
+    <path fill="currentColor" d="M18.3 5.7 12 12m0 0-6.3 6.3M12 12l6.3 6.3M12 12 5.7 5.7"/>
+  </svg>
+</template>
+<template id="icon-pending">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+       class="w-4 h-4 p-1 rounded-full bg-amber-500 text-white">
+    <path fill="currentColor" d="M12 8v5l3 1"/>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+  </svg>
+</template>
+<template id="icon-void">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+       class="w-4 h-4 p-1 rounded-full bg-sky-500 text-white">
+    <path fill="currentColor" d="M6 6l12 12M18 6L6 18"/>
+  </svg>
+</template>
+
+<!-- Fallback/empty state -->
+<div id="rollover-empty" class="text-sm text-gray-400 hidden">No ticket history yet.</div>
+
+<script>
+(function () {
+  const panel = document.getElementById('rollover-rail');
+  const empty = document.getElementById('rollover-empty');
+
+  const icons = {
+    win:     document.getElementById('icon-win'),
+    loss:    document.getElementById('icon-loss'),
+    pending: document.getElementById('icon-pending'),
+    void:    document.getElementById('icon-void'),
+  };
+
+  function fmt(iso) {
+    const d = new Date(iso + 'T00:00:00Z'); // ensure UTC day
+    return {
+      d: String(d.getUTCDate()).padStart(2, '0'),
+      m: d.toLocaleString(undefined, { month: 'short', timeZone: 'UTC' })
+    };
+  }
+
+  function badgeClass(status) {
+    switch (status) {
+      case 'win':     return 'text-emerald-500';
+      case 'loss':    return 'text-gray-400';
+      case 'void':    return 'text-sky-400';
+      default:        return 'text-amber-500';
+    }
+  }
+
+  function render(items) {
+    panel.innerHTML = '';
+    if (!items || !items.length) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    items.forEach(item => {
+      const { d, m } = fmt(item.dateISO);
+      const li = document.createElement('li');
+      li.className = "bg-black/20 rounded-md border border-white/10 p-2 w-24 flex flex-col items-center justify-between select-none";
+
+      li.innerHTML = `
+        <div class="text-center">
+          <div class="text-[11px] font-semibold tracking-wide">${d}</div>
+          <div class="text-[11px] text-gray-400 -mt-0.5">${m}</div>
+          <div class="mt-1 text-xs">
+            <span class="font-medium ${badgeClass(item.status)}">${Number(item.odds || 0).toFixed(2)}</span>
+            <span class="text-gray-400 text-[11px]">odds</span>
+          </div>
+        </div>
+        <div class="mt-2" aria-label="${item.status}"></div>
+      `;
+
+      const slot = li.querySelector('div[aria-label]');
+      const tpl = icons[item.status] || icons.pending;
+      slot.appendChild(tpl.content.cloneNode(true));
+
+      panel.appendChild(li);
+    });
+  }
+
+  // Fetch last 30 days (adjust as you like)
+  fetch('/api/rollover/rail?days=30', { credentials: 'same-origin' })
+    .then(r => r.ok ? r.json() : Promise.reject(r))
+    .then(data => render(data.items))
+    .catch(() => {
+      empty.textContent = 'Unable to load ticket history right now.';
+      empty.classList.remove('hidden');
+    });
+})();
+</script>
+
+{{ daily_ticket_json|json_script:"daily-ticket-data" }}
+{{ upcoming_json|json_script:"upcoming-data" }}
+{{ completed_today_json|json_script:"completed-data" }}
+
+
+
+
+
+
+
+
+
+
+<!-- 3-COLUMN GRID -->
+<div class="max-w-6xl mx-auto px-2 sm:px-6 lg:px-2 py-2">
+  <div class="mt-2 grid grid-cols-1 lg:grid-cols-12 gap-2">
+    <!-- LEFT: Completed Today -->
+    <section class="lg:col-span-3">
+   <div class="relative rounded-2xl shadow-lg overflow-hidden mb-6 "> <!-- Added mb-6 for spacing -->
+    <!-- Football pitch background -->
+    {% if venue.exists and venue.data.image_url %}
+      <div class="absolute inset-0 z-0" style="background: url('{{ venue.data.image_url }}') center/cover no-repeat;"></div>
+    {% else %}
+      <div id="gp-active" class="absolute inset-0 z-0"></div> <!-- Added z-0 -->
+    {% endif %}
+
+    <!-- Overlay to dim slightly for readability -->
+    <div class="absolute inset-0 bg-black/60 z-1"></div> <!-- Added z-1 -->
+
+    <div class="relative z-10 h-full"> <!-- Added z-10 and relative -->
+      <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between relative z-20">
+       <h2 class="text-base font-semibold text-gold">Completed Today {{ m.league_id|league_name }}</h2>
+        <span class="text-xs text-gold">FT · AET · PEN</span>
+        <h2 class="text-base font-semibold text-gold"> {{ m.league_id|league_name }}</h2>
+      </div>
+      <div id="completed-list" class="relative overflow-hidden h-64 flex items-center justify-center z-10"></div>
+    </div>
+  </div> <!-- This closes the main card -->
+
+<!-- MOVE THIS OUTSIDE THE VERBATIM BLOCK - IT MUST EXECUTE -->
+{{ completed_today_json|json_script:"completed-data" }}
+
+<style>
+.scroll2{
+  /* fixed height (or clamp it to be responsive) */
+  height: 410px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  /* nice feel + stable layout when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+.scroll5{
+  /* fixed height (or clamp it to be responsive) */
+  height: 610px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+}
+/* Dark, thin scrollbar */
+.scroll2{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.scroll2::-webkit-scrollbar{ width: 10px; }
+.scroll2::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.scroll2::-webkit-scrollbar-track{ background: transparent; }
+.sticky-head{ position: sticky; top: 0; background: var(--bg-2); z-index: 1; }
+/* make `.sticky-head` actually sticky even if `.fixed` is on it */
+.sticky-head{
+  position: sticky !important;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--bg-2, #0f1626) 92%, transparent);
+  backdrop-filter: blur(6px) saturate(1.05);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  padding: 8px 12px;  /* optional */
+}
+
+
+</style>
+
+
+      <div class=" bg-[#121b2f] scroll5 rounded-xl p-6 mt-6 shadow-lg border border-gold">
+       <!-- Make sure this <h2> is inside a scrollable container -->
+<h2 class="text-sm font-bold mb-6 section-title sticky-head fixed">
+  Top Leagues
+  <span class="count-badge text-xs font-medium px-2 py-1 rounded-md ml-2">332</span>
+</h2>
+
+
+        <div class="space-y-4">
+  <!-- Europe -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Europe</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">3</span>
+    </div>
+    <div class="clubs-container mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=2 days=14 %}" class="club-item text-xs block mb-1">UEFA Champions League</a>
+      <a href="{% url 'combined_dashboard' league_id=3 days=14 %}" class="club-item text-xs block mb-1">UEFA Europa League</a>
+      <a href="{% url 'combined_dashboard' league_id=848 days=14 %}" class="club-item text-xs block">UEFA Conference League</a>
+    </div>
+  </div>
+  
+  <!-- England -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">England</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">6</span>
+    </div>
+    <div class="clubs-container mt-2 text-xs ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=39 days=14 %}" class="club-item block mb-1">Premier League</a>
+      <a href="{% url 'combined_dashboard' league_id=40 days=14 %}" class="club-item block mb-1">Championship</a>
+      <a href="{% url 'combined_dashboard' league_id=41 days=14 %}" class="club-item block mb-1">League One</a>
+      <a href="{% url 'combined_dashboard' league_id=42 days=14 %}" class="club-item block mb-1">League Two</a>
+      <a href="{% url 'combined_dashboard' league_id=45 days=14 %}" class="club-item block mb-1">FA Cup</a>
+      <a href="{% url 'combined_dashboard' league_id=46 days=14 %}" class="club-item block">EFL Cup</a>
+    </div>
+  </div>
+  
+  <!-- Spain -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Spain</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">3</span>
+    </div>
+    <div class="clubs-container mt-2 text-xs ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=140 days=14 %}" class="club-item block mb-1">La Liga</a>
+      <a href="{% url 'combined_dashboard' league_id=141 days=14 %}" class="club-item block mb-1">Segunda División</a>
+      <a href="{% url 'combined_dashboard' league_id=143 days=14 %}" class="club-item block">Copa del Rey</a>
+    </div>
+  </div>
+  
+  <!-- Germany -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Germany</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">3</span>
+    </div>
+    <div class="clubs-container mt-2 text-xs ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=78 days=14 %}" class="club-item block mb-1">Bundesliga</a>
+      <a href="{% url 'combined_dashboard' league_id=79 days=14 %}" class="club-item block mb-1">2. Bundesliga</a>
+      <a href="{% url 'combined_dashboard' league_id=81 days=14 %}" class="club-item block">DFB-Pokal</a>
+    </div>
+  </div>
+  
+  <!-- Italy -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Italy</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">2</span>
+    </div>
+    <div class="clubs-container mt-2 text-xs ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=135 days=14 %}" class="club-item block mb-1">Serie A</a>
+      <a href="{% url 'combined_dashboard' league_id=136 days=14 %}" class="club-item block">Serie B</a>
+    </div>
+  </div>
+  
+  <!-- France -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">France</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">2</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=61 days=14 %}" class="club-item block mb-1">Ligue 1</a>
+      <a href="{% url 'combined_dashboard' league_id=62 days=14 %}" class="club-item block">Ligue 2</a>
+    </div>
+  </div>
+
+  <!-- Netherlands -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Netherlands</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=88 days=14 %}" class="club-item block">Eredivisie</a>
+    </div>
+  </div>
+
+  <!-- Portugal -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Portugal</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=94 days=14 %}" class="club-item block">Liga Portugal</a>
+    </div>
+  </div>
+
+  <!-- Belgium -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Belgium</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=144 days=14 %}" class="club-item block">Jupiler Pro League</a>
+    </div>
+  </div>
+
+  <!-- Scotland -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Scotland</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=179 days=14 %}" class="club-item block">Scottish Premiership</a>
+    </div>
+  </div>
+
+  <!-- Turkey -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Turkey</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=203 days=14 %}" class="club-item block">Süper Lig</a>
+    </div>
+  </div>
+
+  <!-- USA -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">USA</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=253 days=14 %}" class="club-item block">MLS</a>
+    </div>
+  </div>
+
+  <!-- Brazil -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Brazil</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">2</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=71 days=14 %}" class="club-item block mb-1">Brasileirão Série A</a>
+      <a href="{% url 'combined_dashboard' league_id=72 days=14 %}" class="club-item block">Brasileirão Série B</a>
+    </div>
+  </div>
+
+  <!-- Argentina -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Argentina</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">1</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=128 days=14 %}" class="club-item block">Liga Profesional</a>
+    </div>
+  </div>
+
+  <!-- Extra Leagues -->
+  <div class="country-item p-1 rounded-lg border-l-2 border-[#D4AF37]">
+    <div class="flex justify-between items-center">
+      <span class="text-xs">Other Leagues</span>
+      <span class="count-badge text-xs px-2 py-1 rounded-md">9</span>
+    </div>
+    <div class="clubs-container text-xs mt-2 ml-2 pl-3 border-l border-gold-800/30">
+      <a href="{% url 'combined_dashboard' league_id=292 days=14 %}" class="club-item block mb-1">K League 1 (South Korea)</a>
+      <a href="{% url 'combined_dashboard' league_id=98 days=14 %}" class="club-item block mb-1">J1 League</a>
+      <a href="{% url 'combined_dashboard' league_id=288 days=14 %}" class="club-item block mb-1">Chinese Super League</a>
+      <a href="{% url 'combined_dashboard' league_id=278 days=14 %}" class="club-item block mb-1">Liga 1 (Paraguay)</a>
+      <a href="{% url 'combined_dashboard' league_id=268 days=14 %}" class="club-item block mb-1">Liga 1 (Uruguay)</a>
+      <a href="{% url 'combined_dashboard' league_id=265 days=14 %}" class="club-item block mb-1">Liga 1 (Chile)</a>
+      <a href="{% url 'combined_dashboard' league_id=239 days=14 %}" class="club-item block mb-1">Liga 1 (Colombia)</a>
+      <a href="{% url 'combined_dashboard' league_id=307 days=14 %}" class="club-item block mb-1">Saudi Pro League</a>
+      <a href="{% url 'combined_dashboard' league_id=262 days=14 %}" class="club-item block">Liga MX (Mexico)</a>
+    </div>
+  </div>
+</div>
+      </div>
+      
+
+
+
+
+
+
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        .country-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .country-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .clubs-container {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .country-item:hover .clubs-container {
+            opacity: 1;
+            height: auto;
+        }
+        
+        .club-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .club-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+        }
+        
+        .count-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: #D4AF37;
+        }
+        
+        .scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(212, 175, 55, 0.5) rgba(0, 0, 0, 0.1);
+        }
+        
+        .scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5);
+            border-radius: 3px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.7);
+        }
+        
+        .section-title {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #D4AF37, transparent);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+      </style>
+      
+      <script>
+        // Add animation to items on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const items = document.querySelectorAll('.country-item');
+            items.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.classList.add('fade-in');
+                item.style.animationDelay = `${index * 0.05}s`;
+            });
+            
+            // Force reflow to trigger animations
+            setTimeout(() => {
+                items.forEach(item => {
+                    item.style.opacity = '1';
+                });
+            }, 100);
+        });
+      </script>
+    </section>
+
+    <style>
+      /* Football pitch background (full panel) */
+      #gp-active {
+        background:
+          radial-gradient(circle at 25% 25%, rgba(255,255,255,.06) 2px, transparent 3px) 0 0/10px 10px,
+          linear-gradient(90deg, transparent 48%, rgba(255,255,255,.5) 50%, transparent 52%) center/100% 2px no-repeat,
+          repeating-linear-gradient(90deg, #0f8a43 0 24px, #0d7a3b 24px 48px);
+        filter: saturate(1.2) contrast(1.1);
+      }
+    </style>
+
+    {% verbatim %}
+<script type="module">
+// Enhanced completed widget with better error handling
+(function completedTodayWidget(){
+  const WRAP = document.getElementById('completed-list');
+  if (!WRAP) {
+    console.error('Completed list wrapper not found');
+    return;
+  }
+
+  console.log('=== Widget Initializing ===');
+
+  // ---- styles (scoped) ----
+  if (!document.getElementById('ctw-css')) {
+    const css = document.createElement('style');
+    css.id = 'ctw-css';
+    css.textContent = `
+      :root{--gold:#d4af37;--emerald:#10b981;--ink:#fff;--muted:#b8c3d9;--panel:rgba(10,16,28,.55)}
+      #completed-list{position:relative;overflow:hidden}
+      .ctw-track{display:flex;width:100%;height:100%;transition:transform .7s cubic-bezier(.22,.61,.36,1)}
+      .ctw-card{width:100%;height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+      .ctw-top{position:absolute;top:10px;left:10px;display:flex;gap:.5rem;align-items:center;background:var(--panel);border:1px solid rgba(255,255,255,.08);padding:.35rem .55rem;border-radius:12px;color:var(--ink)}
+      .ctw-chip{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:.1rem .45rem;background:rgba(212,175,55,.08)}
+      .ctw-row{display:flex;gap:1.25rem;align-items:center}
+      .ctw-team{display:flex;flex-direction:column;align-items:center;min-width:110px}
+      .ctw-logo{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:10px;padding:1px}
+      .ctw-name{font-size:.8rem;color:var(--ink);opacity:.95;max-width:110px;padding-left:10px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .ctw-score{display:flex;align-items:center;gap:.6rem;font-size:2rem;font-weight:900;color:var(--ink)}
+      .ctw-box{font-size:2.15rem}
+      .ctw-win{color:var(--emerald);text-shadow:0 0 22px rgba(16,185,129,.35)}
+      .ctw-badge{margin-top:.35rem;display:inline-flex;gap:.35rem;align-items:center;color:var(--emerald);border:1px solid rgba(16,185,129,.45);background:rgba(16,185,129,.08);border-radius:999px;padding:.1rem .5rem;font-size:.68rem}
+      .ctw-sub{margin-top:.4rem;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+      .ctw-rail{position:absolute;bottom:10px;left:10px;right:10px;display:flex;gap:.6rem;justify-content:center}
+      .ctw-pill{display:flex;gap:.4rem;align-items:center;background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:.25rem .5rem;color:var(--ink);font-size:.72rem}
+      .ctw-nav{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 .35rem;opacity:0;pointer-events:none;transition:opacity .2s}
+      #completed-list:hover .ctw-nav{opacity:1}
+      .ctw-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
+      .ctw-btn:hover{background:rgba(0,0,0,.55)}
+      .ctw-empty{height:100%;display:flex;flex-direction:column;gap:.5rem;align-items:center;justify-content:center;color:var(--gold)}
+    `;
+    document.head.appendChild(css);
+    console.log('Styles injected');
+  }
+
+  const PLACEHOLDER = '/static/img/team-badge.svg';
+  const safe = (x, d='') => (x == null ? d : x);
+  const logo = (u) => (u && String(u).trim()) ? u : PLACEHOLDER;
+  const num = (x) => (x == null || x === '') ? NaN : Number(x);
+
+  /* -------------------------------
+     League name lookup (CLIENT-SIDE)
+     ------------------------------- */
+  const LEAGUE_NAMES = {
+  // England
+  39: "Premier League",
+  40: "Championship",
+  41: "League One",
+  42: "League Two",
+  45: "FA Cup",
+  46: "EFL Cup",
+
+  // France
+  61: "Ligue 1",
+  62: "Ligue 2",
+
+  // Germany
+  78: "Bundesliga",
+  79: "2. Bundesliga",
+  81: "DFB-Pokal",
+
+  // Spain
+  140: "La Liga",
+  141: "Segunda División",
+  143: "Copa del Rey",
+
+  // Italy
+  135: "Serie A",
+  136: "Serie B",
+
+  // Netherlands / Portugal / Belgium / Scotland / Turkey / USA / Brazil / Argentina
+  88: "Eredivisie",
+  94: "Liga Portugal",
+  144: "Jupiler Pro League",
+  179: "Scottish Premiership",
+  203: "Süper Lig",
+  253: "MLS",                  // USA
+  71: "Brasileirão Série A",
+  72: "Brasileirão Série B",
+  128: "Liga Profesional",
+
+  // Europe
+  2: "UEFA Champions League",
+  3: "UEFA Europa League",
+  848: "UEFA Conference League",
+
+  // 🌍 Extra leagues you asked for
+  292: "K League 1 (South Korea)",
+  98:  "J1 League",
+  288: "Chinese Super League",
+  278: "Liga 1 (paraguay)",
+  268: "Liga 1 (uruguay)",
+  265: "Liga 1 (chile)",
+  239: "liga 1 (columbia)",
+  307: "Saudi Pro League",
+  262: "Liga MX (Mexico)",
+};
+
+
+  function leagueName(m){
+    const id = Number(m?.league_id ?? m?.league?.id);
+    if (Number.isFinite(id) && LEAGUE_NAMES[id]) return LEAGUE_NAMES[id];
+    // fallback to any name present in the payload
+    return m?.league_name || m?.league?.name || (Number.isFinite(id) ? String(id) : "League");
+  }
+
+  function getData(){
+    console.log('=== Getting Data ===');
+    const el = document.getElementById('completed-data');
+    if (!el) {
+      console.error('completed-data element not found');
+      return [];
+    }
+
+    try {
+      const content = el.textContent || '{}';
+      console.log('Raw content:', content);
+      const payload = JSON.parse(content);
+      console.log('Parsed payload:', payload);
+
+      const items = payload.matches || payload.data || payload.games || [];
+      console.log('Found items:', items.length, items);
+      return Array.isArray(items) ? items : [];
+    } catch (e) {
+      console.error('Error parsing JSON:', e);
+      return [];
+    }
+  }
+
+  function winnerSide(m){
+    const h = num(m.goals_home ?? m.home_score ?? m.score_home);
+    const a = num(m.goals_away ?? m.away_score ?? m.score_away);
+    if (isNaN(h) || isNaN(a)) return 'draw';
+    if (h > a) return 'home';
+    if (h < a) return 'away';
+    return 'draw';
+  }
+
+  const statusChip = m => (['FT','AET','PEN'].includes(String(m.status||'').toUpperCase()) ? String(m.status).toUpperCase() : 'FT');
+
+  function scoreBlock(m){
+    const h = safe(m.goals_home ?? m.home_score ?? m.score_home, '—');
+    const a = safe(m.goals_away ?? m.away_score ?? m.score_away, '—');
+    const win = winnerSide(m);
+    return `
+      <div class="ctw-score">
+        <span class="ctw-box ${win==='home'?'ctw-win':''}">${h}</span>
+        <span>–</span>
+        <span class="ctw-box ${win==='away'?'ctw-win':''}">${a}</span>
+      </div>
+      ${win!=='draw'
+        ? `<div class="ctw-badge" title="Winner">🏆 <span>WINNER</span></div>`
+        : `<div class="ctw-sub">Draw</div>`}
+    `;
+  }
+
+  function card(m){
+    console.log('Rendering card for match:', m);
+    const win = winnerSide(m);
+    const stage  = m.stage || m.round || '';
+
+    return `
+      <div class="ctw-card">
+        <div class="ctw-top">
+          <span class="ctw-chip">${statusChip(m)}</span>
+          <strong title="${m.league_id ?? ''}">${leagueName(m)}</strong>
+        </div>
+        <div class="ctw-row">
+          <div class="ctw-team ${win==='home'?'winner':''}">
+            <img class="ctw-logo" src="${logo(m.home_logo)}" alt="${safe(m.home)}" onerror="this.src='${PLACEHOLDER}'">
+            <div class="ctw-name">${safe(m.home || m.home_name || 'Home')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:.35rem">
+            ${scoreBlock(m)}
+          </div>
+          <div class="ctw-team ${win==='away'?'winner':''}">
+            <img class="ctw-logo" src="${logo(m.away_logo)}" alt="${safe(m.away)}" onerror="this.src='${PLACEHOLDER}'">
+            <div class="ctw-name">${safe(m.away || m.away_name || 'Away')}</div>
+          </div>
+        </div>
+        <div class="ctw-sub">${stage}</div>
+        <div class="ctw-rail">
+          <div class="ctw-pill">⚽ <span>${safe(m.goals_home,'—')}–${safe(m.goals_away,'—')}</span></div>
+          <div class="ctw-pill">${statusChip(m)}</div>
+          ${m.kickoff_utc ? `<div class="ctw-pill">🕒 <span>${String(m.kickoff_utc).slice(11,16)}</span></div>`:''}
+        </div>
+      </div>
+    `;
+  }
+
+  function render(){
+    console.log('=== Starting Render ===');
+    const items = getData();
+    console.log('Items to render:', items);
+
+    if (!items.length){
+      WRAP.innerHTML = `
+        <div class="ctw-empty">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke-width="1.5" opacity=".6"/>
+            <path d="M9 10h.01M15 10h.01M9.5 15.5a4 4 0 015 0" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+          </svg>
+          <div>No completed matches today</div>
+        </div>`;
+      console.log('Rendered empty state');
+      return;
+    }
+
+    WRAP.innerHTML = `
+      <div class="ctw-track" id="ctw-track">
+        ${items.map(card).join('')}
+      </div>
+      <div class="ctw-nav" aria-hidden="true">
+        <button class="ctw-btn" id="ctw-prev" aria-label="Previous">‹</button>
+        <button class="ctw-btn" id="ctw-next" aria-label="Next">›</button>
+      </div>`;
+
+    const track = document.getElementById('ctw-track');
+    if (!track) {
+      console.error('Track element not found after render');
+      return;
+    }
+
+    let i = 0, N = items.length, t = null;
+    const go = k => {
+      i = (k + N) % N;
+      track.style.transform = `translateX(-${i * 100}%)`;
+    };
+
+    const play = () => { stop(); t = setInterval(() => go(i + 1), 4000); };
+    const stop = () => { if (t) clearInterval(t), t = null; };
+
+    WRAP.querySelector('#ctw-prev')?.addEventListener('click', () => go(i - 1));
+    WRAP.querySelector('#ctw-next')?.addEventListener('click', () => go(i + 1));
+    WRAP.addEventListener('mouseenter', stop);
+    WRAP.addEventListener('mouseleave', play);
+
+    // swipe
+    let sx = null;
+    WRAP.addEventListener('touchstart', e => {
+      sx = e.touches[0].clientX;
+      stop();
+    }, {passive: true});
+
+    WRAP.addEventListener('touchend', e => {
+      if (sx == null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) go(i + (dx < 0 ? 1 : -1));
+      sx = null;
+      play();
+    }, {passive: true});
+
+    play();
+    console.log('Render completed with', items.length, 'items');
+  }
+
+  // Initialize with better error handling
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', render);
+    } else {
+      render();
+    }
+  } catch (error) {
+    console.error('Widget initialization error:', error);
+    WRAP.innerHTML = `
+      <div class="ctw-empty">
+        <div>Error loading matches</div>
+        <div style="font-size: 12px; color: var(--muted);">Check console for details</div>
+      </div>`;
+  }
+})();
+</script>
+{% endverbatim %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- CENTER: Incoming Fixtures (Selected Day) -->
+    <section class="lg:col-span-6">
+      <!-- Date Rail (14 days) -->
+      <nav class="flex gap-4 bg-gray-900/60 border border-gray-800 rounded-2xl p-3">
+        {% for d in date_rail %}
+          <a href="{{ d.url }}"
+             class="flex flex-col items-center px-3 py-1 rounded-md
+                    {% if d.active %} bg-brand/20 text-brand {% else %} text-gray-300 hover:bg-gray-800 {% endif %}">
+            <span class="text-[11px] uppercase">{{ d.dow }}</span>
+            <span class="text-sm font-semibold">{{ d.day }}</span>
+          </a>
+        {% endfor %}
+      </nav>
+
+      <!-- Market filter bar -->
+      <div class="flex text-xs items-center gap- px-4 py-2 border-b border-gray-800">
+        <div class="flex flex-wrap gap-3 text-xs">
+          <button type="button" data-market="1X2"
+                  class="mk-btn text-xs px-1 py-1 rounded bg-gray-800/50 text-brand ">
+            3 Way (1X2)
+          </button>
+          <button type="button" data-market="DC" class="mk-btn px-1 py-1 text-xs rounded bg-gray-800/70 text-gray-200">
+            Double Chance
+          </button>
+          <button type="button" data-market="BTTS" class="mk-btn px-1 text-xs py-1 rounded bg-gray-800/70 text-gray-200">
+            GG / NG
+          </button>
+          <button type="button" data-market="DNB" class="mk-btn px-1 text-xs py-1 rounded bg-gray-800/70 text-gray-200">
+            Draw No Bet
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" data-market="OU" class="mk-btn px-1  py-1 rounded bg-gray-800/70 text-gray-200">
+              Over/Under
+            </button>
+            <label class="text-xs text-gray-400">Line</label>
+            <select id="ou-line" class="bg-gray-800/70 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200">
+              <option value="1.5">1.5</option>
+              <option value="2.5" selected>2.5</option>
+              <option value="3.5">3.5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative ml-auto mb-4 max-w-full">
+        <input id="ix2-search" type="search" placeholder="Search teams…"
+               class="w-full bg-gray-800/70 border border-gray-700 rounded-lg px-8 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 text-gray-400 absolute left-2 top-2.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd" />
+        </svg>
+      </div>
+
+      <div class="bg-gray-900/60 border border-gray-800 rounded-2xl shadow-lg">
+        <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-base font-semibold">Incoming Fixtures</h2>
+          <span id="ix2-count" class="text-xs text-gray-400"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-gray-300" id="ix2-table">
+            <thead class="bg-gray-800/50 text-gray-400 text-xs">
+              <tr>
+               
+                <th class="px-2 py-2 text-left">Match</th>
+               <th class="px-2 py-2">Kickoff (UTC)</th>
+                <th class="px-2 py-2 text-center">1</th>
+                <th class="px-2 py-2 text-center">X</th>
+                <th class="px-2 py-2 text-center">2</th>
+                <th class="px-2 py-2 text-center">Best</th>
+              </tr>
+            </thead>
+            <tbody id="ix2-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+
+
+
+
+
+
+    <!-- RIGHT: Today's Auto Ticket (server-rendered) -->
+    <aside class="lg:col-span-3">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-sm  text-white flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 100-4V6z" />
+          </svg>
+          Today's Ticket
+        </h2>
+        <form method="get" class="flex items-center gap-2">
+          <input type="date" name="ticket_date"
+                 value="{{ ticket_date|default:'' }}"
+                 class="bg-gray-700 text-gray-100 text-xs rounded-lg px-1 py-1 border border-gray-600 focus:ring-2 focus:ring-brand focus:border-brand transition">
+          <button type="submit"
+                  class="px-1 py-1 text-sm rounded-lg bg-brand text-white hover:bg-brand-600 transition flex items-center gap-">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" />
+            </svg>
+            Load
+          </button>
+        </form>
+      </div>
+
+      {% with t=daily_ticket_json.ticket %}
+        <section class="rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-gray-700 to-gray-800 px-5 py-4 border-b border-gray-700">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                </svg>
+                Daily Ticket
+              </h3>
+              {% if t %}
+                <div class="text-xs bg-brand/20 text-brand px-2 py-1 rounded-md">
+                  {{ t.legs }} legs
+                </div>
+              {% endif %}
+            </div>
+            {% if t %}
+              <div class="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-300">
+                <span class="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  Acc: <span class="font-semibold text-white">{{ t.acc_probability }}%</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                  </svg>
+                  Fair: <span class="tabular-nums">{{ t.acc_fair_odds|floatformat:2 }}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                  </svg>
+                  Book: <span class="tabular-nums">{{ t.acc_bookish_odds|floatformat:2 }}</span>
+                </span>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="p-1 max-h-[calc(100vh-220px)] overflow-y-auto">
+            {% if not t %}
+              <div class="text-gray-400 p-2 text-center flex flex-col items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>No ticket for this date.</p>
+              </div>
+            {% else %}
+             <ul class="divide-y divide-gray-700" id="ticket-legs">
+  {% with is_sub=subscription.current %}
+    {% for leg in t.selections %}
+     {% with s=leg.status|default:''|upper %}
+  {% if not is_sub and forloop.counter > 2 and s != 'FT' and s != 'AET' and s != 'PEN' %}
+        {# ---- LOCKED ITEM (3rd onward for non-subscribers) ---- #}
+        <li class="relative p-2">
+          <div class="pointer-events-none opacity-40 blur-[3px] select-none">
+            {# Reuse your existing leg markup, but dimmed #}
+            <div class="flex items-start justify-between gap-3">
+              <span class="inline-flex h-6 w-6 mr-4 items-center justify-center rounded-full bg-gray-500/20 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+              </span>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="flex flex-col items-center">
+                      <img src="{{ leg.home_logo|default:'' }}" alt="{{ leg.home }} logo"
+                           class="h-4 w-4 rounded object-contain bg-white p-0.5"
+                           onerror="this.onerror=null;this.src='/static/img/team-badge.svg'">
+                      <span class="text-xs mt-1 text-gray-300 truncate max-w-[60px]">{{ leg.home|truncatechars:10 }}</span>
+                    </div>
+                    <span class="text-gray-400 font-bold px-1">VS</span>
+                    <div class="flex flex-col items-center">
+                      <img src="{{ leg.away_logo|default:'' }}" alt="{{ leg.away }} logo"
+                           class="h-4 w-4 rounded object-contain bg-white p-0.5"
+                           onerror="this.onerror=null;this.src='/static/img/team-badge.svg'">
+                      <span class="text-xs mt-1 text-gray-300 truncate max-w-[60px]">{{ leg.away|truncatechars:10 }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space-x-2">
+              <span class="text-xs market-label bg-inherit px-2">{{ leg.market }}</span>
+              <span class="text-xs bg-inherit text-gray-200 px-2">{{ leg.specifier }}</span>
+              <div class="text-xs ml-2 text-gray-300 tabular-nums">{{ leg.fair_odds|floatformat:2 }} odds</div>
+            </div>
+          </div>
+
+          {# GOLD LOCK OVERLAY + CTA #}
+          <a href="/choose/"
+             class="absolute inset-0 grid place-items-center rounded-md bg-black/50 backdrop-blur-[1px]">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+                 style="border-color: rgba(212,175,55,.45); background: rgba(212,175,55,.12); color:#D4AF37;">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 9V7a5 5 0 0110 0v2h1a1 1 0 011 1v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7a1 1 0 011-1h1zm2-2a3 3 0 016 0v2H7V7z"/>
+              </svg>
+              <span class="text-[12px] font-semibold">Unlock with Golden Membership</span>
+            </div>
+          </a>
+        </li>
+      {% else %}
+        {# ---- VISIBLE (first two OR subscriber) ---- #}
+        <li class="p-2 hover:bg-gray-700/30 transition-colors duration-200">
+          <div class="flex items-start justify-between gap-3">
+            <span class="inline-flex h-6 w-6 mr-4 items-center justify-center rounded-full
+                  {% if leg.result == 'WIN' %} bg-emerald-600/20 text-emerald-400
+                  {% elif leg.result == 'LOSE' %} bg-rose-500/20 text-rose-400
+                  {% else %} bg-gray-500/20 text-gray-400 {% endif %}">
+              {% if leg.result == 'WIN' %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              {% elif leg.result == 'LOSE' %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+              {% endif %}
+            </span>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="flex flex-col items-center">
+                    <img src="{{ leg.home_logo|default:'' }}" alt="{{ leg.home }} logo"
+                         class="h-4 w-4 rounded object-contain bg-white p-0.5"
+                         onerror="this.onerror=null;this.src='/static/img/team-badge.svg'">
+                    <span class="text-xs mt-1 text-gray-300 truncate max-w-[60px]">{{ leg.home|truncatechars:10 }}</span>
+                    {% if leg.status in 'FT,AET,PEN' %}
+                      <span class="ml-2 text-[11px] rounded px-1.5 py-0.5 bg-gray-100 text-gray-700 tabular-nums">
+                        {{ leg.goals_home|default_if_none:"-" }}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <span class="text-gray-400 font-bold px-1">VS</span>
+
+                  <div class="flex flex-col items-center">
+                    <img src="{{ leg.away_logo|default:'' }}" alt="{{ leg.away }} logo"
+                         class="h-4 w-4 rounded object-contain bg-white p-0.5"
+                         onerror="this.onerror=null;this.src='/static/img/team-badge.svg'">
+                    <span class="text-xs mt-1 text-gray-300 truncate max-w-[60px]">{{ leg.away|truncatechars:10 }}</span>
+                    {% if leg.status in 'FT,AET,PEN' %}
+                      <span class="ml-2 text-[11px] rounded px-1.5 py-0.5 bg-gray-100 text-gray-700 tabular-nums">
+                        {{ leg.goals_away|default_if_none:"-" }}
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <span class="text-[11px] text-gray-400 tabular-nums ml-1" data-time="{{ leg.kickoff_utc }}"></span>
+
+          <div class="mt-1 flex items-center space-x-2">
+            <span class="text-xs market-label bg-inherit px-2 js-truncate" data-text="{{ leg.market }}">{{ leg.market }}</span>
+            <span class="text-xs bg-inherit text-gray-200 px-2">{{ leg.specifier }}</span>
+            <div class="text-xs ml-2 text-gray-300 tabular-nums">{{ leg.fair_odds|floatformat:2 }} odds</div>
+            {% if leg.bookish_odds %}
+              <div class="text-xs text-gray-400 tabular-nums">bk {{ leg.bookish_odds|floatformat:2 }}</div>
+            {% endif %}
+          </div>
+        </li>
+      {% endif %}
+      {% endwith %}
+    {% endfor %}
+  {% endwith %}
+</ul>
+{% if not subscription.current and t and t.selections|length > 2 %}
+  <div class="px-3 py-2 text-[12px] text-center"
+       style="color:#D4AF37; border-top:1px solid rgba(212,175,55,.25); background:rgba(212,175,55,.06);">
+    You’re seeing <strong>2</strong> of <strong>{{ t.selections|length }}</strong> legs. 
+    <a href="/choose/" class="underline font-semibold">Unlock the rest with Golden Membership</a>.
+  </div>
+{% endif %}
+
+{% if t %}
+  <div class="bg-gray-700/50 px-4 py-3 text-xs text-gray-300 flex justify-between items-center">
+    <span>Generated on {{ t.date }}</span>
+
+    {% if subscription.current %}
+      <button class="text-brand hover:text-brand-400 transition flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+        Export
+      </button>
+    {% else %}
+      <a href="/choose/" class="px-2 py-1 rounded-md font-semibold"
+         style="background:rgba(212,175,55,.15); border:1px solid rgba(212,175,55,.35); color:#D4AF37;">
+        Unlock All Legs
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
+
+            {% endif %}
+         
+        </section>
+      {% endwith %}
+    </aside>
+  </div>
+</div>
+{# ---- ACCESS FLAGS ---- #}
+<script>
+  window.GP_ACCESS = {
+    signedIn: {{ request.user.is_authenticated|yesno:"true,false" }},
+    /* If you pass `subscription` in context:
+       - allow when subscription.is_active OR subscription.current exists
+       - otherwise treat as not premium */
+    premium: {% if subscription and subscription.is_active %}true{% elif subscription and subscription.current %}true{% else %}false{% endif %}
+  };
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ---------- JSON blobs ----------
+  function getJson(id){
+    const el = document.getElementById(id);
+    if(!el) return null;
+    try { return JSON.parse(el.textContent); }
+    catch(e){ console.error('Bad JSON in #' + id, e); return null; }
+  }
+  const upcoming  = getJson('upcoming-data')  || {};
+  const completed = getJson('completed-data') || {};
+
+  // ---------- Helpers ----------
+  const PLACEHOLDER='/static/img/team-badge.svg';
+  const safeLogo = u => (u && String(u).trim().length ? u : PLACEHOLDER);
+  const lc = v => (typeof v === 'string' ? v.toLowerCase() : v);
+  const fmtPct = p => (p==null || isNaN(p)) ? '—' : (Math.round(p*1000)/10).toFixed(1)+'%';
+  const fmtKickoffUTC = iso => {
+    try{
+      const d=new Date(iso);
+      const m=d.toLocaleString('en-GB',{month:'short',timeZone:'UTC'});
+      const day=String(d.getUTCDate()).padStart(2,'0');
+      const hh=String(d.getUTCHours()).padStart(2,'0');
+      const mm=String(d.getUTCMinutes()).padStart(2,'0');
+      return `${m} ${day}, ${hh}:${mm}`;
+    }catch{return '—';}
+  };
+  const fmtTime = iso => { try{ return new Date(iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }catch{return '—';} };
+
+  // ---------- Ultra-tolerant 1X2 extractor (per match object) ----------
+  function extract1x2_from_match(match){
+    let H=null, D=null, A=null;
+
+    if (match.one_x_two && typeof match.one_x_two==='object') {
+      const o = match.one_x_two;
+      H = o.H ?? o.h ?? o['1'] ?? o.home ?? null;
+      D = o.D ?? o.d ?? o['X'] ?? o['x'] ?? o.draw ?? null;
+      A = o.A ?? o.a ?? o['2'] ?? o.away ?? null;
+      if (H!=null || D!=null || A!=null) return {H:Number(H), D:Number(D), A:Number(A)};
+    }
+
+    const arr = Array.isArray(match.markets) ? match.markets
+             : Array.isArray(match.predicted_markets) ? match.predicted_markets
+             : [];
+
+    for (const m of arr){
+      const mname = lc(m.market ?? m.market_code);
+      if (!mname) continue;
+      if (!(mname==='1x2' || mname==='match_odds' || mname==='ml' || mname==='ft_1x2')) continue;
+
+      const spec = lc(m.specifier);
+      const p = (m.p!=null) ? Number(m.p) : (m.p_model!=null ? Number(m.p_model) : null);
+      if (p==null || Number.isNaN(p)) continue;
+
+      if (spec==='h' || spec==='1' || spec==='home') H=p;
+      else if (spec==='d' || spec==='x' || spec==='draw') D=p;
+      else if (spec==='a' || spec==='2' || spec==='away') A=p;
+    }
+
+    if (H==null && D==null && A==null) return null;
+    return {H,D,A};
+  }
+
+  // Completed list (left) – unchanged
+});
+</script>
+
+<!-- *************** MARKET TABLE (fixed DC order + league names) *************** -->
+<!-- *************** MARKET TABLE (fixed DC order + league names, with soft-lock) *************** -->
+<script>
+(function () {
+  // --- DOM refs
+  const tbody    = document.getElementById('ix2-body');
+  const countEl  = document.getElementById('ix2-count');
+  const theadRow = document.querySelector('#ix2-table thead tr');
+  const searchEl = document.getElementById('ix2-search');
+  const ouLineEl = document.getElementById('ou-line');
+  const mkBtns   = Array.from(document.querySelectorAll('.mk-btn'));
+  if (!tbody || !theadRow) return;
+
+  // --- access flags
+  const ACCESS = window.GP_ACCESS || { signedIn:false, premium:false };
+  const FREE_MARKETS = ['1X2','DC','BTTS','OU'];
+  const isLocked = (mk) => !ACCESS.premium && !FREE_MARKETS.includes(mk);
+
+  // --- data
+  let upcoming = {};
+  try { upcoming = JSON.parse(document.getElementById('upcoming-data')?.textContent || '{}'); } catch {}
+  const ALL = Array.isArray(upcoming.matches) ? upcoming.matches : [];
+  ALL.forEach((m,i)=> m._idx = i);
+
+  // --- utils
+  // --- Date/Time helpers (UTC) ---
+const fmtDateUTC = iso => {
+  try {
+    const d = new Date(iso);
+    const dow = d.toLocaleString('en-GB', { weekday: 'short', timeZone: 'UTC' }); // Mon
+    const mon = d.toLocaleString('en-GB', { month: 'short',   timeZone: 'UTC' }); // Sep
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const yr  = d.getUTCFullYear();
+    return `${dow}, ${mon} ${day}, ${yr}`;
+  } catch { return '—'; }
+};
+
+const fmtTimeUTC = iso => {
+  try {
+    const d = new Date(iso);
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mm = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  } catch { return '—'; }
+};
+
+// sortable keys
+const keyDateUTC = iso => {
+  try {
+    const d = new Date(iso);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  } catch { return '0000-00-00'; }
+};
+const keyTimeUTC = iso => {
+  try {
+    const d = new Date(iso);
+    return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
+  } catch { return '00:00'; }
+};
+
+  const lc = v => (typeof v==='string' ? v.toLowerCase() : v);
+  const fmtPct = p => (p==null || isNaN(p)) ? '—' : (Math.round(p*1000)/10).toFixed(1)+'%';
+  const fmtKickoffUTC = iso => {
+    try{
+      const d=new Date(iso);
+      const m=d.toLocaleString('en-GB',{month:'short',timeZone:'UTC'});
+      const day=String(d.getUTCDate()).padStart(2,'0');
+      const hh=String(d.getUTCHours()).padStart(2,'0');
+      const mm=String(d.getUTCMinutes()).padStart(2,'0');
+      return `${m} ${day}, ${hh}:${mm}`;
+    }catch{return '—';}
+  };
+
+  // Prefer league names
+  const leagueLabel = (m) => {
+    const fromMatch =
+      m.league_name ||
+      m.league_label ||
+      (m.league && (m.league.name || m.league.league_name)) ||
+      m.competition_name ||
+      m.tournament_name ||
+      m.competition;
+    if (m.league_id != null && window.LEAGUE_MAP && LEAGUE_MAP[m.league_id]) {
+      return LEAGUE_MAP[m.league_id];
+    }
+    return fromMatch || (m.league_id != null ? `League ${m.league_id}` : 'League —');
+  };
+
+  // date filter from ?date=
+  const getParam = n => new URLSearchParams(location.search).get(n);
+  function parseUtcDate(s){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');
+    if(!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2]-1, +m[3]));
+  }
+  const targetDate = parseUtcDate(getParam('date'));
+  function sameUtcDay(iso){
+    if (!targetDate) return true;
+    const d=new Date(iso);
+    return d.getUTCFullYear()===targetDate.getUTCFullYear()
+        && d.getUTCMonth()   ===targetDate.getUTCMonth()
+        && d.getUTCDate()    ===targetDate.getUTCDate();
+  }
+
+  // --- extractors ---
+  function fromMarkets(match){
+    return Array.isArray(match.markets) ? match.markets
+         : Array.isArray(match.predicted_markets) ? match.predicted_markets
+         : [];
+  }
+
+  // 1X2: H/D/A
+  function ex_1x2(match){
+    let H=null,D=null,A=null;
+    for (const m of fromMarkets(match)){
+      const name = lc(m.market ?? m.market_code);
+      if (!(name==='1x2' || name==='match_odds' || name==='ml' || name==='ft_1x2')) continue;
+      const s = lc(m.specifier);
+      const p = (m.p!=null) ? +m.p : (m.p_model!=null ? +m.p_model : null);
+      if (p==null || isNaN(p)) continue;
+      if (s==='h'||s==='1'||s==='home') H=p;
+      else if (s==='d'||s==='x'||s==='draw') D=p;
+      else if (s==='a'||s==='2'||s==='away') A=p;
+    }
+    if (H==null && D==null && A==null) return null;
+    return { '1':H, 'X':D, '2':A };
+  }
+
+  // Double Chance
+  function ex_dc(match){
+    let v1x=null, v12=null, vx2=null;
+    for (const m of fromMarkets(match)){
+      const name = lc(m.market ?? m.market_code);
+      if (name!=='dc' && name!=='double_chance') continue;
+      const s = (m.specifier||'').toUpperCase();
+      const p = (m.p!=null) ? +m.p : (m.p_model!=null ? +m.p_model : null);
+      if (p==null || isNaN(p)) continue;
+      if (s==='1X') v1x=p;
+      else if (s==='12') v12=p;
+      else if (s==='X2') vx2=p;
+    }
+    if (v1x==null && v12==null && vx2==null) return null;
+    return { '1X': v1x, '12': v12, 'X2': vx2 };
+  }
+
+  // BTTS
+  function ex_btts(match){
+    let yes=null,no=null;
+    for (const m of fromMarkets(match)){
+      const name = lc(m.market ?? m.market_code);
+      if (name!=='btts' && name!=='gg_ng' && name!=='both_teams_to_score') continue;
+      const s = lc(m.specifier);
+      const p = (m.p!=null) ? +m.p : (m.p_model!=null ? +m.p_model : null);
+      if (p==null || isNaN(p)) continue;
+      if (s==='yes' || s==='gg') yes=p;
+      else if (s==='no' || s==='ng') no=p;
+    }
+    if (yes==null && no==null) return null;
+    return { 'GG': yes, 'NG': no };
+  }
+
+  // DNB via AH 0
+  function ex_dnb(match){
+    let home=null,away=null;
+    for (const m of fromMarkets(match)){
+      const name = lc(m.market ?? m.market_code);
+      if (name!=='ah' && name!=='asian_handicap') continue;
+      const s = lc(m.specifier||'');
+      const p = (m.p!=null) ? +m.p : (m.p_model!=null ? +m.p_model : null);
+      if (p==null || isNaN(p)) continue;
+      if (s==='home_0') home=p;
+      if (s==='away_0') away=p;
+    }
+    if (home==null && away==null) return null;
+    return { 'Home': home, 'Away': away };
+  }
+
+  // Over/Under
+  function ex_ou(match, lineStr){
+    let over=null, under=null;
+    for (const m of fromMarkets(match)){
+      const name = lc(m.market ?? m.market_code);
+      if (name!=='ou' && name!=='over_under') continue;
+      const s = lc(m.specifier||'');
+      const p = (m.p!=null) ? +m.p : (m.p_model!=null ? +m.p_model : null);
+      if (p==null || isNaN(p)) continue;
+      if (s===`${lineStr}_over`)  over=p;
+      if (s===`${lineStr}_under`) under=p;
+    }
+    if (over==null && under==null) return null;
+    return { 'Over': over, 'Under': under };
+  }
+
+  // --- link helpers (build /mega/match/<match_key>/) ---
+  function getMatchId(m){
+    return m.fixture_id ?? m.id ?? m.match_id ?? m.game_id ?? m.event_id ?? null;
+  }
+  function slugify(s){
+    return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'');
+  }
+  function matchKeyForURL(m){
+    const id = getMatchId(m);
+    if (id != null) return String(id);
+    try{
+      const d = new Date(m.kickoff_utc);
+      const ts = `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}${String(d.getUTCHours()).padStart(2,'0')}${String(d.getUTCMinutes()).padStart(2,'0')}`;
+      return `${slugify(m.home)}-vs-${slugify(m.away)}-${ts}`;
+    }catch{
+      return `${slugify(m.home)}-vs-${slugify(m.away)}`;
+    }
+  }
+
+  // --- rendering per market ---
+  let activeMarket = '1X2';
+
+function setHeader(cols){
+  theadRow.innerHTML = `
+    <th class="px-2 py-2">Kickoff (UTC)</th>
+    <th class="px-2 py-2 ">Match</th>
+    ${cols.map(c => `<th class="px-2 py-2 text-center">${c}</th>`).join('')}
+    <th class="px-2 py-2 text-center">Best</th>
+  `;
+}
+
+
+ function rowFor(match, obj, labels){
+  const vals = labels.map(k => obj?.[k] ?? -1);
+  const max  = Math.max(...vals);
+  const bestIdx = vals.indexOf(max);
+  const bestLabel = bestIdx >= 0 ? labels[bestIdx] : '';
+  const hl = match.home_logo || '';
+  const al = match.away_logo || '';
+  const href = `/mega/match/${matchKeyForURL(match)}/`;
+
+  return `
+    <tr class="border-t border-gray-800 hover:bg-gray-800/30 cursor-pointer" data-href="${href}">
+      <td class="px-2 py-2 tabular-nums text-xs text-gray-300">${fmtTimeUTC(match.kickoff_utc)}</td>
+ <td class="px-2 py-2">
+        <a href="${href}" class="flex items-center gap-2 hover:underline decoration-dotted">
+          ${hl ? `<img src="${hl}" class="h-5 w-5 rounded-sm object-contain bg-white/10" alt="">` : ''}
+          <span class="text-xs">${match.home || ''}</span>
+          <span class="text-gray-500">vs</span>
+          ${al ? `<img src="${al}" class="h-5 w-5 rounded-sm object-contain bg-white/10" alt="">` : ''}
+          <span class="text-xs">${match.away || ''}</span>
+        </a>
+      </td>
+      ${labels.map((lbl, i) => {
+          const p = vals[i];
+          const hi = (p===max) ? 'text-emerald-400 text-xs font-semibold' : '';
+          return `<td class="px-2 py-2 text-center ${hi}">${fmtPct(p)}</td>`;
+      }).join('')}
+      <td class="px-2 py-2 text-center ${bestLabel ? 'text-xs text-emerald-400 font-semibold':''}">${bestLabel || '—'}</td>
+    </tr>
+  `;
+}
+
+
+  function render(){
+    // enforce allowed market
+    if (isLocked(activeMarket)) activeMarket = '1X2';
+
+    let labels = [];
+    if (activeMarket === '1X2')      labels = ['1','X','2'];
+    else if (activeMarket === 'DC')  labels = ['1X','12','X2'];
+    else if (activeMarket === 'BTTS')labels = ['GG','NG'];
+    else if (activeMarket === 'DNB') labels = ['Home','Away'];
+    else if (activeMarket === 'OU')  labels = ['Over','Under'];
+    setHeader(labels);
+
+    const q = (searchEl?.value || '').trim().toLowerCase();
+
+    let rows = [];
+    for (const m of ALL){
+      if (!sameUtcDay(m.kickoff_utc)) continue;
+      const hay = `${m.home||''} ${m.away||''}`.toLowerCase();
+      if (q && !hay.includes(q)) continue;
+
+      let obj = null;
+      if (activeMarket==='1X2')      obj = ex_1x2(m);
+      else if (activeMarket==='DC')  obj = ex_dc(m);
+      else if (activeMarket==='BTTS')obj = ex_btts(m);
+      else if (activeMarket==='DNB') obj = ex_dnb(m);
+      else if (activeMarket==='OU')  obj = ex_ou(m, (ouLineEl?.value || '2.5'));
+
+      if (!obj || labels.every(k => obj[k]==null)) continue;
+      rows.push({ m, obj });
+    }
+
+    rows.sort((a,b) => (new Date(a.m.kickoff_utc)) - (new Date(b.m.kickoff_utc)));
+
+    const groups = new Map();
+    for (const it of rows){
+      const key = leagueLabel(it.m);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(it);
+    }
+    const sortedGroups = Array.from(groups.entries()).sort((a,b)=>a[0].localeCompare(b[0]));
+
+    if (!sortedGroups.length){
+      tbody.innerHTML = `<tr><td colspan="${2 + labels.length + 1}" class="px-3 py-4 text-sm text-gray-400">No fixtures for this market.</td></tr>`;
+      if (countEl) countEl.textContent = `0 matches`;
+      return;
+    }
+
+    const html = sortedGroups.map(([title, items]) => {
+      const headerRow = `
+        <tr>
+          <td colspan="${2 + labels.length + 1}" class="bg-gray-800/40 text-gray-200 text-sm font-semibold px-2 py-2 border-t border-gray-800">
+            ${title}
+          </td>
+        </tr>`;
+      const rs = items.map(({m,obj}) => rowFor(m, obj, labels)).join('');
+      return headerRow + rs;
+    }).join('');
+
+    tbody.innerHTML = html;
+
+    // row click
+    Array.from(tbody.querySelectorAll('tr[data-href]')).forEach(tr=>{
+      tr.addEventListener('click', (e)=>{
+        if (e.target.closest('a')) return;
+        const url = tr.getAttribute('data-href');
+        if (url) location.href = url;
+      });
+    });
+
+    if (countEl) countEl.textContent = `${rows.length} matches`;
+  }
+
+  // tiny paywall cue
+// tiny paywall cue (inline styles so it ALWAYS shows gold)
+function showPaywall() {
+  const n = document.getElementById('ix2-count');
+  if (!n) return;
+  n.innerHTML = '🔒 <a href="/choose/" class="n.style.color underline text-gold">Unlock BTTS, DNB & Over/Under with Golden Membership</a>';
+  n.style.fontWeight = '600';
+  n.style.color = '#D4AF37';               // gold
+}
+
+
+  // disable OU line for non-premium
+  if (!ACCESS.premium && ouLineEl) {
+    ouLineEl.disabled = true;
+    ouLineEl.title = 'Locked — Golden members only';
+    ouLineEl.classList.add('opacity-40','cursor-not-allowed');
+  }
+
+  // decorate buttons + guarded click
+  mkBtns.forEach(btn => {
+    const mk = btn.dataset.market;
+
+    if (isLocked(mk)) {
+      btn.dataset.locked = '1';
+      btn.title = 'Locked — Golden members only';
+      btn.classList.add('opacity-40','cursor-not-allowed','relative');
+      if (!btn.querySelector('[data-lock]')) {
+        btn.insertAdjacentHTML('beforeend', '<span data-lock class="ml-1" aria-hidden="true">🔒</span>');
+      }
+    }
+
+    btn.addEventListener('click', (e) => {
+      if (btn.dataset.locked === '1') {
+        e.preventDefault(); e.stopPropagation();
+        showPaywall();
+        return;
+      }
+      activeMarket = mk;
+      mkBtns.forEach(b => b.classList.remove('bg-brand/20','text-brand','font-medium'));
+      btn.classList.add('bg-brand/20','text-brand','font-medium');
+      render();
+    });
+  });
+
+  // OU line change (only meaningful when premium)
+  ouLineEl?.addEventListener('change', () => {
+    if (ACCESS.premium && activeMarket==='OU') render();
+  });
+
+  // debounce search
+  let t=null;
+  searchEl?.addEventListener('input', () => {
+    clearTimeout(t); t=setTimeout(render, 120);
+  });
+
+  // initial render
+  render();
+
+  
+})();
+</script>
+
+{% endblock %}

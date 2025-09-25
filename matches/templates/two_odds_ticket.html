@@ -1,0 +1,316 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ brand }} — {{ ticket_date }}</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --card: #141922;
+      --ink: #eaf0ff;
+      --muted: #9fb0cc;
+      --accent: #42d392;
+      --accent-2: #2dd4bf;
+      --dash: #3a4557;
+
+      --win-bg: rgba(66,211,146,.12);
+      --win-bd: #42d392;
+      --win-tx: #b9f3d8;
+
+      --lose-bg: rgba(255,83,112,.12);
+      --lose-bd: #ff5370;
+      --lose-tx: #ffd1d8;
+
+      --void-bg: rgba(160,174,192,.10);
+      --void-bd: #718096;
+      --void-tx: #d7dee9;
+
+      --pend-bg: rgba(45,212,191,.12);
+      --pend-bd: #2dd4bf;
+      --pend-tx: #b5f2ea;
+    }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    .wrap { max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    .ticket {
+      background: linear-gradient(180deg, #151b25, #10141c);
+      border: 2px solid #1f2836;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .ticket:before, .ticket:after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; width: 14px;
+      background: repeating-linear-gradient(to bottom, transparent, transparent 8px, var(--dash) 8px, var(--dash) 12px, transparent 12px, transparent 20px);
+    }
+    .ticket:before { left: -7px; }
+    .ticket:after  { right: -7px; transform: scaleX(-1); }
+
+    .head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 18px 22px; border-bottom: 1px dashed var(--dash);
+      background: radial-gradient(60% 80% at left, rgba(66,211,146,.15), transparent 60%);
+    }
+    .brand { font-weight: 800; letter-spacing: .6px; font-size: 20px; }
+    .date  { color: var(--muted); font-size: 14px; }
+
+    .summary {
+      display:flex; gap:18px; flex-wrap:wrap; padding: 16px 22px; border-bottom:1px dashed var(--dash);
+    }
+    .chip { background:#0f141c; border:1px solid #1e2735; border-radius:12px; padding:8px 12px; font-size:13px; color:var(--muted); }
+    .chip b { color: var(--ink); }
+
+    .status { padding: 2px 8px; border-radius: 999px; border:1px solid transparent; font-weight: 800; letter-spacing: .4px; }
+    .status-won { color: var(--accent); border-color: var(--accent); }
+    .status-lost { color: #ff6b81; border-color:#ff6b81; }
+    .status-pending { color: var(--accent-2); border-color: var(--accent-2); }
+    .status-void { color: var(--muted); border-color: var(--muted); }
+
+    .legs { padding: 6px; }
+    .leg {
+      display:flex; gap:12px; align-items:center;
+      background: #111722; border:1px solid #1a2331; border-radius:12px; margin:10px; padding: 12px 14px;
+    }
+    .leg-idx {
+      min-width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+      background: #0e1420; border:1px solid #223043; color:#9fb0cc; font-weight:700; font-size:13px;
+    }
+    .teams { flex: 1 1 auto; }
+    .teams .line1 { font-weight: 700; }
+    .teams .line2 { color: var(--muted); font-size: 12px; margin-top:2px; }
+
+    .meta {
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      font-size:12px; color:var(--muted);
+    }
+    .meta .badge {
+      border:1px solid #29374c; background:#0d1420; border-radius:8px; padding:6px 8px; color:#d7e4ff; font-weight:600;
+    }
+
+    /* result chip */
+    .badge.result { font-weight:900; letter-spacing:.4px; }
+    .result-win { background: var(--win-bg);  border-color: var(--win-bd);  color: var(--win-tx); }
+    .result-lose { background: var(--lose-bg); border-color: var(--lose-bd); color: var(--lose-tx); }
+    .result-void { background: var(--void-bg); border-color: var(--void-bd); color: var(--void-tx); }
+    .result-pending { background: var(--pend-bg); border-color: var(--pend-bd); color: var(--pend-tx); }
+
+    .foot {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 14px 22px; border-top:1px dashed var(--dash); color:var(--muted); font-size:12px;
+    }
+    .empty { padding: 22px; text-align: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="ticket">
+      <div class="head">
+        <div class="brand">{{ brand }}</div>
+        <div class="date">{{ ticket_date }}</div>
+      </div>
+
+      <div class="summary">
+        <div class="chip">Legs: <b>{{ legs_count }}</b></div>
+        <div class="chip">Accumulator Odds: <b>{{ acc_bookish_odds|default:"—" }}</b></div>
+        <div class="chip">Fair Odds: <b>{{ acc_fair_odds|default:"—" }}</b></div>
+        <div class="chip">Model Win %: <b>{{ acc_probability_pct|default:"0.00" }}%</b></div>
+        <div class="chip">Status: <b class="status {{ status_class }}">{{ status|upper }}</b></div>
+      </div>
+
+      {% if has_ticket %}
+        <div class="legs">
+          {% for s in legs %}
+            <div class="leg">
+              <div class="leg-idx">{{ forloop.counter }}</div>
+
+              <div class="teams">
+                <div class="line1">{{ s.home }} vs {{ s.away }}</div>
+                <div class="line2">
+                  {{ s.kickoff_label|default:s.kickoff_utc }}
+                  {% if s.goals_home != None and s.goals_away != None %}
+                    · FT: {{ s.goals_home }}–{{ s.goals_away }}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="meta">
+                <div class="badge">{{ s.market }} — {{ s.specifier }}</div>
+                {% if s.p %}<div class="badge">P: {{ s.p|floatformat:2 }}</div>{% endif %}
+                {% if s.fair_odds %}<div class="badge">Fair: {{ s.fair_odds }}</div>{% endif %}
+                <div class="badge result {{ s.result_class }}">{{ s.result }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">{{ note }}</div>
+      {% endif %}
+
+      <div class="foot">
+        <div>Generated for UTC date: <b>{{ ticket_date }}</b></div>
+        <div>Refreshed on open (results settled & saved)</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ brand }} — {{ ticket_date }}</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --card: #141922;
+      --ink: #eaf0ff;
+      --muted: #9fb0cc;
+      --accent: #42d392;
+      --accent-2: #2dd4bf;
+      --dash: #3a4557;
+
+      --win-bg: rgba(66,211,146,.12);
+      --win-bd: #42d392;
+      --win-tx: #b9f3d8;
+
+      --lose-bg: rgba(255,83,112,.12);
+      --lose-bd: #ff5370;
+      --lose-tx: #ffd1d8;
+
+      --void-bg: rgba(160,174,192,.10);
+      --void-bd: #718096;
+      --void-tx: #d7dee9;
+
+      --pend-bg: rgba(45,212,191,.12);
+      --pend-bd: #2dd4bf;
+      --pend-tx: #b5f2ea;
+    }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    .wrap { max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    .ticket {
+      background: linear-gradient(180deg, #151b25, #10141c);
+      border: 2px solid #1f2836;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .ticket:before, .ticket:after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; width: 14px;
+      background: repeating-linear-gradient(to bottom, transparent, transparent 8px, var(--dash) 8px, var(--dash) 12px, transparent 12px, transparent 20px);
+    }
+    .ticket:before { left: -7px; }
+    .ticket:after  { right: -7px; transform: scaleX(-1); }
+
+    .head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 18px 22px; border-bottom: 1px dashed var(--dash);
+      background: radial-gradient(60% 80% at left, rgba(66,211,146,.15), transparent 60%);
+    }
+    .brand { font-weight: 800; letter-spacing: .6px; font-size: 20px; }
+    .date  { color: var(--muted); font-size: 14px; }
+
+    .summary {
+      display:flex; gap:18px; flex-wrap:wrap; padding: 16px 22px; border-bottom:1px dashed var(--dash);
+    }
+    .chip { background:#0f141c; border:1px solid #1e2735; border-radius:12px; padding:8px 12px; font-size:13px; color:var(--muted); }
+    .chip b { color: var(--ink); }
+
+    .status { padding: 2px 8px; border-radius: 999px; border:1px solid transparent; font-weight: 800; letter-spacing: .4px; }
+    .status-won { color: var(--accent); border-color: var(--accent); }
+    .status-lost { color: #ff6b81; border-color:#ff6b81; }
+    .status-pending { color: var(--accent-2); border-color: var(--accent-2); }
+    .status-void { color: var(--muted); border-color: var(--muted); }
+
+    .legs { padding: 6px; }
+    .leg {
+      display:flex; gap:12px; align-items:center;
+      background: #111722; border:1px solid #1a2331; border-radius:12px; margin:10px; padding: 12px 14px;
+    }
+    .leg-idx {
+      min-width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+      background: #0e1420; border:1px solid #223043; color:#9fb0cc; font-weight:700; font-size:13px;
+    }
+    .teams { flex: 1 1 auto; }
+    .teams .line1 { font-weight: 700; }
+    .teams .line2 { color: var(--muted); font-size: 12px; margin-top:2px; }
+
+    .meta {
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      font-size:12px; color:var(--muted);
+    }
+    .meta .badge {
+      border:1px solid #29374c; background:#0d1420; border-radius:8px; padding:6px 8px; color:#d7e4ff; font-weight:600;
+    }
+
+    /* result chip */
+    .badge.result { font-weight:900; letter-spacing:.4px; }
+    .result-win { background: var(--win-bg);  border-color: var(--win-bd);  color: var(--win-tx); }
+    .result-lose { background: var(--lose-bg); border-color: var(--lose-bd); color: var(--lose-tx); }
+    .result-void { background: var(--void-bg); border-color: var(--void-bd); color: var(--void-tx); }
+    .result-pending { background: var(--pend-bg); border-color: var(--pend-bd); color: var(--pend-tx); }
+
+    .foot {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 14px 22px; border-top:1px dashed var(--dash); color:var(--muted); font-size:12px;
+    }
+    .empty { padding: 22px; text-align: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="ticket">
+      <div class="head">
+        <div class="brand">{{ brand }}</div>
+        <div class="date">{{ ticket_date }}</div>
+      </div>
+
+      <div class="summary">
+        <div class="chip">Legs: <b>{{ legs_count }}</b></div>
+        <div class="chip">Accumulator Odds: <b>{{ acc_bookish_odds|default:"—" }}</b></div>
+        <div class="chip">Fair Odds: <b>{{ acc_fair_odds|default:"—" }}</b></div>
+        <div class="chip">Model Win %: <b>{{ acc_probability_pct|default:"0.00" }}%</b></div>
+        <div class="chip">Status: <b class="status {{ status_class }}">{{ status|upper }}</b></div>
+      </div>
+
+      {% if has_ticket %}
+        <div class="legs">
+          {% for s in legs %}
+            <div class="leg">
+              <div class="leg-idx">{{ forloop.counter }}</div>
+
+              <div class="teams">
+                <div class="line1">{{ s.home }} vs {{ s.away }}</div>
+                <div class="line2">
+                  {{ s.kickoff_label|default:s.kickoff_utc }}
+                  {% if s.goals_home != None and s.goals_away != None %}
+                    · FT: {{ s.goals_home }}–{{ s.goals_away }}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="meta">
+                <div class="badge">{{ s.market }} — {{ s.specifier }}</div>
+                {% if s.p %}<div class="badge">P: {{ s.p|floatformat:2 }}</div>{% endif %}
+                {% if s.fair_odds %}<div class="badge">Fair: {{ s.fair_odds }}</div>{% endif %}
+                <div class="badge result {{ s.result_class }}">{{ s.result }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">{{ note }}</div>
+      {% endif %}
+
+      <div class="foot">
+        <div>Generated for UTC date: <b>{{ ticket_date }}</b></div>
+        <div>Refreshed on open (results settled & saved)</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

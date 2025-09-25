@@ -1,0 +1,68 @@
+{# templates/tickets/_two_odds_ticket.html #}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --bg: #0c0f14; --card: #141922; --ink: #eaf0ff; --muted: #9fb0cc;
+      --accent: #42d392; --dash: #3a4557;
+    }
+    .ticket { background: linear-gradient(180deg, #151b25, #10141c);
+      border: 1px solid #1f2836; border-radius: 14px; overflow:hidden; }
+    .head { display:flex; justify-content:space-between; align-items:center;
+      padding: 14px 16px; border-bottom: 1px dashed var(--dash); }
+    .brand { font-weight:800; letter-spacing:.6px; font-size:16px; }
+    .date  { color:var(--muted); font-size:12px; }
+    .summary { display:flex; gap:10px; flex-wrap:wrap; padding: 12px 16px; border-bottom:1px dashed var(--dash); }
+    .chip { background:#0f141c; border:1px solid #1e2735; border-radius:10px; padding:6px 10px; font-size:12px; color:var(--muted); }
+    .chip b { color:var(--ink); }
+    .legs { padding: 6px; }
+    .leg { display:flex; gap:12px; align-items:center; background:#111722; border:1px solid #1a2331; border-radius:10px; margin:8px; padding:10px 12px; }
+    .leg-idx { min-width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; background:#0e1420; border:1px solid #223043; color:#9fb0cc; font-weight:700; font-size:12px; }
+    .teams { flex:1 1 auto; }
+    .teams .line1 { font-weight:700; font-size:14px; }
+    .teams .line2 { color:var(--muted); font-size:12px; margin-top:2px; }
+    .meta { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+    .meta .badge { border:1px solid #29374c; background:#0d1420; border-radius:8px; padding:4px 6px; color:#d7e4ff; font-weight:600; }
+    .empty { padding: 16px; text-align:center; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="head">
+      <div class="brand">{{ brand }}</div>
+      <div class="date">{{ ticket_date }}</div>
+    </div>
+
+    <div class="summary">
+      <div class="chip">Legs: <b>{{ legs_count }}</b></div>
+      <div class="chip">Accumulator Odds: <b>{{ acc_bookish_odds|default:"—" }}</b></div>
+      <div class="chip">Fair Odds: <b>{{ acc_fair_odds|default:"—" }}</b></div>
+      <div class="chip">Model Win %: <b>{{ acc_probability_pct|default:"0.00" }}%</b></div>
+      <div class="chip">Mode: <b>{{ status|upper }}</b></div>
+    </div>
+
+    {% if has_ticket %}
+      <div class="legs">
+        {% for s in legs %}
+          <div class="leg">
+            <div class="leg-idx">{{ forloop.counter }}</div>
+            <div class="teams">
+              <div class="line1">{{ s.home }} vs {{ s.away }}</div>
+              <div class="line2">{{ s.kickoff_label|default:s.kickoff_utc }}</div>
+            </div>
+            <div class="meta">
+              <div class="badge">{{ s.market }} — {{ s.specifier }}</div>
+              <div class="badge">P: {{ s.p|floatformat:2 }}</div>
+              <div class="badge">Fair: {{ s.fair_odds }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">{{ note|default:"No ticket for this filter." }}</div>
+    {% endif %}
+  </div>
+</body>
+</html>

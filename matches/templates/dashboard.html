@@ -1,0 +1,142 @@
+<!-- templates/matches/dashboard.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Predictions — League {{ league_id }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-semibold">Predictions · League {{ league_id }}</h1>
+      <div class="flex gap-2">
+        {% for tab in day_tabs %}
+          <a href="?day={{ tab.val }}"
+             class="px-3 py-1.5 rounded-full text-sm
+                    {% if tab.active %}bg-emerald-500 text-white{% else %}bg-slate-800 hover:bg-slate-700{% endif %}">
+            {{ tab.label }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 3-column layout -->
+    <div class="grid grid-cols-12 gap-6">
+      <!-- Left: Completed Today -->
+      <aside class="col-span-3 space-y-4">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-medium">Completed Today</h2>
+          </div>
+          <div class="space-y-3">
+            {% if completed %}
+              {% for m in completed %}
+                <a href="{% url 'match_detail' match_id=m.id %}"
+                   class="block bg-slate-800/60 hover:bg-slate-800 rounded-xl p-3">
+                  <div class="text-xs text-slate-400">{{ m.kickoff_utc|date:"H:i" }} · {{ m.status }}</div>
+                  <div class="text-sm mt-1">{{ m.home.name }} <span class="text-slate-400">vs</span> {{ m.away.name }}</div>
+                </a>
+              {% endfor %}
+            {% else %}
+              <div class="text-sm text-slate-400">No completed matches yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Upcoming (for selected day) -->
+      <main class="col-span-6 space-y-4">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h2 class="font-medium">Upcoming Fixtures (Day {{ day }})</h2>
+            <span class="text-xs text-slate-400">click a match to see more</span>
+          </div>
+          <div class="divide-y divide-slate-800">
+            {% if upcoming %}
+              {% for item in upcoming %}
+                <a href="{% url 'match_detail' match_id=item.match_id %}" class="block p-4 hover:bg-slate-800/60">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="text-xs text-slate-400">{{ item.koff|date:"D d M · H:i" }}</div>
+                      <div class="text-sm">{{ item.home }} <span class="text-slate-400">vs</span> {{ item.away }}</div>
+                    </div>
+
+                    {% if item.top_pick %}
+                      <div class="text-right">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400">Top Pick</div>
+                        <div class="text-sm">
+                          <span class="text-emerald-400 font-medium">{{ item.top_pick.market }}</span>
+                          <span class="ml-1 text-slate-300">{{ item.top_pick.specifier }}</span>
+                        </div>
+                        <div class="text-xs text-slate-400">
+                          p={{ item.top_pick.p|floatformat:2 }} · fair {{ 1.0|div:item.top_pick.p|floatformat:2 }}
+                        </div>
+                      </div>
+                    {% else %}
+                      <div class="text-right text-xs text-slate-500">No markets</div>
+                    {% endif %}
+                  </div>
+                </a>
+              {% endfor %}
+            {% else %}
+              <div class="p-6 text-sm text-slate-400">No fixtures for this day.</div>
+            {% endif %}
+          </div>
+        </div>
+      </main>
+
+      <!-- Right: Today's Ticket -->
+      <aside class="col-span-3 space-y-4">
+        <div class="relative bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-medium">Today’s Ticket</h2>
+            <a href="#" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full">Predict Now</a>
+          </div>
+
+          <!-- Blur overlay when locked -->
+          {% if ticket_locked %}
+            <div class="absolute inset-0 backdrop-blur-sm bg-slate-900/40 rounded-2xl flex items-center justify-center pointer-events-none">
+              <div class="text-sm text-slate-300">Ticket unlocks when matches go LIVE</div>
+            </div>
+          {% endif %}
+
+          <div class="space-y-3">
+            {% if ticket %}
+              {% for t in ticket %}
+                <div class="bg-slate-800/60 rounded-xl p-3">
+                  <div class="text-xs text-slate-400">{{ t.koff|date:"H:i" }}</div>
+                  <div class="text-sm">{{ t.home }} <span class="text-slate-400">vs</span> {{ t.away }}</div>
+                  <div class="mt-1 text-[13px]">
+                    <span class="text-emerald-400 font-medium">{{ t.market }}</span>
+                    <span class="ml-1 text-slate-300">{{ t.specifier }}</span>
+                    <span class="ml-2 text-slate-400">p={{ t.p|floatformat:2 }}</span>
+                  </div>
+                  {% if t.outcome %}
+                    <div class="mt-1 text-xs">
+                      {% if t.outcome == "WIN" %}
+                        <span class="text-emerald-400">✓ Won</span>
+                      {% elif t.outcome == "LOSE" %}
+                        <span class="text-rose-400">✗ Lost</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-sm text-slate-400">No selections yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- tiny helper for fair odds in template -->
+  {% comment %} add this filter in a real project; inline hack: {% endcomment %}
+  <script>
+    // noop; real formatting handled server-side above
+  </script>
+</body>
+</html>

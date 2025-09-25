@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Golden Prediction • Premium Sports Picks</title>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<div>the completed {{completed_today_json}}</div>
+
+
+{% if venue.exists and venue.data.image_url %}
+  <div class="absolute inset-0" style="background: url('{{ venue.data.image_url }}') center/cover no-repeat;">
+{% else %}
+  <div id="gp-active" class="absolute inset-0"></div>
+{% endif %}
+
+<!-- Overlay to dim slightly for readability -->
+<div class="absolute inset-0 bg-black/60"></div>
+
+<div class="relative h-full">
+  <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+    <h2 class="text-base font-semibold text-gold">Completed Today</h2>
+    <span class="text-xs text-gold">FT · AET · PEN</span>
+  </div>
+  <div id="completed-list" class="relative overflow-hidden h-64 flex items-center justify-center"></div>
+</div>
+
+<!-- MOVE THIS OUTSIDE THE VERBATIM BLOCK - IT MUST EXECUTE -->
+{{ completed_today_json|json_script:"completed-data" }}
+ <style>
+      /* Football pitch background (full panel) */
+      #gp-active {
+        background:
+          radial-gradient(circle at 25% 25%, rgba(255,255,255,.06) 2px, transparent 3px) 0 0/10px 10px,
+          linear-gradient(90deg, transparent 48%, rgba(255,255,255,.5) 50%, transparent 52%) center/100% 2px no-repeat,
+          repeating-linear-gradient(90deg, #0f8a43 0 24px, #0d7a3b 24px 48px);
+        filter: saturate(1.2) contrast(1.1);
+      }
+    </style>
+<style>
+  /* Football pitch background (full panel) */
+  #gp-active {
+    background:
+      radial-gradient(circle at 25% 25%, rgba(255,255,255,.06) 2px, transparent 3px) 0 0/10px 10px,
+      linear-gradient(90deg, transparent 48%, rgba(255,255,255,.5) 50%, transparent 52%) center/100% 2px no-repeat,
+      repeating-linear-gradient(90deg, #0f8a43 0 24px, #0d7a3b 24px 48px);
+    filter: saturate(1.2) contrast(1.1);
+  }
+</style>
+
+<!-- Add debug script to see what's happening -->
+<script>
+console.log('=== DEBUG: Completed Matches Data ===');
+const dataEl = document.getElementById('completed-data');
+console.log('Data element:', dataEl);
+if (dataEl) {
+    console.log('Data content:', dataEl.textContent);
+    try {
+        const data = JSON.parse(dataEl.textContent);
+        console.log('Parsed data:', data);
+        console.log('Number of matches:', data.matches ? data.matches.length : 0);
+    } catch (e) {
+        console.error('Parse error:', e);
+    }
+}
+</script>
+
+<script type="module">
+// Enhanced completed widget with better error handling
+(function completedTodayWidget(){
+  const WRAP = document.getElementById('completed-list');
+  if (!WRAP) {
+    console.error('Completed list wrapper not found');
+    return;
+  }
+
+  console.log('=== Widget Initializing ===');
+
+  // ---- styles (scoped) ----
+  if (!document.getElementById('ctw-css')) {
+    const css = document.createElement('style');
+    css.id = 'ctw-css';
+    css.textContent = `
+      :root{--gold:#d4af37;--emerald:#10b981;--ink:#fff;--muted:#b8c3d9;--panel:rgba(10,16,28,.55)}
+      #completed-list{position:relative;overflow:hidden}
+      .ctw-track{display:flex;width:100%;height:100%;transition:transform .7s cubic-bezier(.22,.61,.36,1)}
+      .ctw-card{width:100%;height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+      .ctw-top{position:absolute;top:10px;left:10px;display:flex;gap:.5rem;align-items:center;background:var(--panel);border:1px solid rgba(255,255,255,.08);padding:.35rem .55rem;border-radius:12px;color:var(--ink)}
+      .ctw-chip{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:.1rem .45rem;background:rgba(212,175,55,.08)}
+      .ctw-row{display:flex;gap:1.25rem;align-items:center}
+      .ctw-team{display:flex;flex-direction:column;align-items:center;min-width:110px}
+      .ctw-logo{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:10px;padding:10px}
+      .ctw-name{font-size:.8rem;color:var(--ink);opacity:.95;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .ctw-score{display:flex;align-items:center;gap:.6rem;font-size:2rem;font-weight:900;color:var(--ink)}
+      .ctw-box{font-size:2.15rem}
+      .ctw-win{color:var(--emerald);text-shadow:0 0 22px rgba(16,185,129,.35)}
+      .ctw-badge{margin-top:.35rem;display:inline-flex;gap:.35rem;align-items:center;color:var(--emerald);border:1px solid rgba(16,185,129,.45);background:rgba(16,185,129,.08);border-radius:999px;padding:.1rem .5rem;font-size:.68rem}
+      .ctw-sub{margin-top:.4rem;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+      .ctw-rail{position:absolute;bottom:10px;left:10px;right:10px;display:flex;gap:.6rem;justify-content:center}
+      .ctw-pill{display:flex;gap:.4rem;align-items:center;background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:.25rem .5rem;color:var(--ink);font-size:.72rem}
+      .ctw-nav{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 .35rem;opacity:0;pointer-events:none;transition:opacity .2s}
+      #completed-list:hover .ctw-nav{opacity:1}
+      .ctw-btn{pointer-events:auto;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}
+      .ctw-btn:hover{background:rgba(0,0,0,.55)}
+      .ctw-empty{height:100%;display:flex;flex-direction:column;gap:.5rem;align-items:center;justify-content:center;color:var(--gold)}
+    `;
+    document.head.appendChild(css);
+    console.log('Styles injected');
+  }
+
+  const PLACEHOLDER = '/static/img/team-badge.svg';
+  const safe = (x, d='') => (x == null ? d : x);
+  const logo = (u) => (u && String(u).trim()) ? u : PLACEHOLDER;
+  const num = (x) => (x == null || x === '') ? NaN : Number(x);
+
+  function getData(){
+    console.log('=== Getting Data ===');
+    const el = document.getElementById('completed-data');
+    if (!el) {
+      console.error('completed-data element not found');
+      return [];
+    }
+    
+    try {
+      const content = el.textContent || '{}';
+      console.log('Raw content:', content);
+      const payload = JSON.parse(content);
+      console.log('Parsed payload:', payload);
+      
+      const items = payload.matches || payload.data || payload.games || [];
+      console.log('Found items:', items.length, items);
+      return Array.isArray(items) ? items : [];
+    } catch (e) {
+      console.error('Error parsing JSON:', e);
+      return [];
+    }
+  }
+
+  function winnerSide(m){
+    const h = num(m.goals_home ?? m.home_score ?? m.score_home);
+    const a = num(m.goals_away ?? m.away_score ?? m.score_away);
+    if (isNaN(h) || isNaN(a)) return 'draw';
+    if (h > a) return 'home';
+    if (h < a) return 'away';
+    return 'draw';
+  }
+
+  const statusChip = m => (['FT','AET','PEN'].includes(String(m.status||'').toUpperCase()) ? String(m.status).toUpperCase() : 'FT');
+
+  function scoreBlock(m){
+    const h = safe(m.goals_home ?? m.home_score ?? m.score_home, '—');
+    const a = safe(m.goals_away ?? m.away_score ?? m.score_away, '—');
+    const win = winnerSide(m);
+    return `
+      <div class="ctw-score">
+        <span class="ctw-box ${win==='home'?'ctw-win':''}">${h}</span>
+        <span>–</span>
+        <span class="ctw-box ${win==='away'?'ctw-win':''}">${a}</span>
+      </div>
+      ${win!=='draw'
+        ? `<div class="ctw-badge" title="Winner">🏆 <span>WINNER</span></div>`
+        : `<div class="ctw-sub">Draw</div>`}
+    `;
+  }
+
+  function card(m){
+    console.log('Rendering card for match:', m);
+    const win = winnerSide(m);
+    const league = m.league_name || m.league || (m.league && m.league.name) || 'League';
+    const stage  = m.stage || m.round || '';
+    
+    return `
+      <div class="ctw-card">
+        <div class="ctw-top">
+          <span class="ctw-chip">${statusChip(m)}</span>
+          <strong>${league}</strong>
+        </div>
+        <div class="ctw-row">
+          <div class="ctw-team ${win==='home'?'winner':''}">
+            <img class="ctw-logo" src="${logo(m.home_logo)}" alt="${safe(m.home)}" onerror="this.src='${PLACEHOLDER}'">
+            <div class="ctw-name">${safe(m.home || m.home_name || 'Home')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:.35rem">
+            ${scoreBlock(m)}
+          </div>
+          <div class="ctw-team ${win==='away'?'winner':''}">
+            <img class="ctw-logo" src="${logo(m.away_logo)}" alt="${safe(m.away)}" onerror="this.src='${PLACEHOLDER}'">
+            <div class="ctw-name">${safe(m.away || m.away_name || 'Away')}</div>
+          </div>
+        </div>
+        <div class="ctw-sub">${stage}</div>
+        <div class="ctw-rail">
+          <div class="ctw-pill">⚽ <span>${safe(m.goals_home,'—')}–${safe(m.goals_away,'—')}</span></div>
+          <div class="ctw-pill">${statusChip(m)}</div>
+          ${m.kickoff_utc ? `<div class="ctw-pill">🕒 <span>${String(m.kickoff_utc).slice(11,16)}</span></div>`:''}
+        </div>
+      </div>
+    `;
+  }
+
+  function render(){
+    console.log('=== Starting Render ===');
+    const items = getData();
+    console.log('Items to render:', items);
+    
+    if (!items.length){
+      WRAP.innerHTML = `
+        <div class="ctw-empty">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke-width="1.5" opacity=".6"/>
+            <path d="M9 10h.01M15 10h.01M9.5 15.5a4 4 0 015 0" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+          </svg>
+          <div>No completed matches today</div>
+        </div>`;
+      console.log('Rendered empty state');
+      return;
+    }
+    
+    WRAP.innerHTML = `
+      <div class="ctw-track" id="ctw-track">
+        ${items.map(card).join('')}
+      </div>
+      <div class="ctw-nav" aria-hidden="true">
+        <button class="ctw-btn" id="ctw-prev" aria-label="Previous">‹</button>
+        <button class="ctw-btn" id="ctw-next" aria-label="Next">›</button>
+      </div>`;
+    
+    const track = document.getElementById('ctw-track');
+    if (!track) {
+      console.error('Track element not found after render');
+      return;
+    }
+    
+    let i = 0, N = items.length, t = null;
+    const go = k => { 
+      i = (k + N) % N; 
+      track.style.transform = `translateX(-${i * 100}%)`; 
+    };
+    
+    const play = () => { 
+      stop(); 
+      t = setInterval(() => go(i + 1), 4000); 
+    };
+    
+    const stop = () => { 
+      if (t) clearInterval(t), t = null; 
+    };
+    
+    WRAP.querySelector('#ctw-prev')?.addEventListener('click', () => go(i - 1));
+    WRAP.querySelector('#ctw-next')?.addEventListener('click', () => go(i + 1));
+    WRAP.addEventListener('mouseenter', stop);
+    WRAP.addEventListener('mouseleave', play);
+    
+    // swipe
+    let sx = null;
+    WRAP.addEventListener('touchstart', e => { 
+      sx = e.touches[0].clientX; 
+      stop(); 
+    }, {passive: true});
+    
+    WRAP.addEventListener('touchend', e => {
+      if (sx == null) return; 
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) go(i + (dx < 0 ? 1 : -1)); 
+      sx = null; 
+      play();
+    }, {passive: true});
+    
+    play();
+    console.log('Render completed with', items.length, 'items');
+  }
+
+  // Initialize with better error handling
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', render);
+    } else {
+      render();
+    }
+  } catch (error) {
+    console.error('Widget initialization error:', error);
+    WRAP.innerHTML = `
+      <div class="ctw-empty">
+        <div>Error loading matches</div>
+        <div style="font-size: 12px; color: var(--muted);">Check console for details</div>
+      </div>`;
+  }
+})();
+</script>
+
+<div>the completed {{completed_today_json}}</div>
+
+{%endblock%}

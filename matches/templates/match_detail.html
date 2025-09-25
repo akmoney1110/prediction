@@ -1,0 +1,2966 @@
+
+{%extends "base.html"%}
+{% load static %}
+{% load static math_filters %}
+{%block content%}
+
+<head>
+  <meta charset="utf-8">
+  <title>{{ match.home }} vs {{ match.away }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+ <script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+--ink:#0B0F16; /* primary dark */
+--deep:#0E1B2E; /* dark blue */
+--gold:#D4AF37; /* accents / logo */
+--gold-600:#B9932D;
+--text:#FFFFFF; /* main text */
+--muted:#C7CEDA; /* soft text */
+--line:#1f2a37; /* subtle separators */
+--success:#10B981; /* emerald */
+--cyan:#22D3EE; /* vibe */
+--danger:#EF4444; /* red */
+--amber:#F59E0B; /* amber */
+--shadow:0 10px 30px rgba(0,0,0,.35);
+--glass: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+}
+
+
+
+
+
+
+.wrp{max-width:1280px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr 320px;gap:20px}
+@media (max-width:1100px){.wrap{grid-template-columns:1fr 1fr}.center{grid-column:1/span 2}}
+@media (max-width:780px){.wrap{grid-template-columns:1fr}.center{grid-column:1}}
+
+
+/* Card */
+.card{position:relative;border-radius:16px;border:1px solid rgba(255,255,255,.08);
+background:var(--glass);box-shadow:var(--shadow);padding:16px}
+.card:hover{transform:translateY(-2px);transition:.18s ease}
+.card h3{margin:0 0 10px;font-size:15px;letter-spacing:.05em;text-transform:uppercase;
+background:linear-gradient(90deg, var(--cyan), var(--success), var(--gold));
+-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.team{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#D4AF37;}
+.team-namer{font-weight:900;font-size:clamp(14px,1.8vw,18px);letter-spacing:.3px;text-transform:uppercase;color:#D4AF37;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+/* ===== HERO (with football pitch) ===== */
+.hero{position:relative;border-radius:22px;overflow:hidden;margin:24px auto 12px;border:1px solid rgba(255,255,255,.12);min-height:380px}
+.hero-inner{position:relative;padding:40px 24px 52px}
+
+
+/* pitch background */
+.hero::before{content:"";position:absolute;inset:0;backgrund:
+/* turf stripes */
+repeating-linear-gradient(90deg, rgba(17,94,50,.38) 0 14px, rgba(17,94,50,.28) 14px 28px),
+radial-gradient(1200px 600px at 50% -20%, rgba(16,185,129,.25), transparent 60%),
+var(--deep);
+filter:saturate(1.15)}
+/* white pitch lines */
+.hero::after{content:"";position:absolute;inset:14px;border:2px solid rgba(255,255,255,.55);border-radius:18px;
+box-shadow:inset 0 0 0 80px rgba(255,255,255,.04);}
+
+ .hero-grid{position:relative;display:grid;grid-template-columns:160px 1fr 160px;align-items:center;gap:16px;z-index:1}
+    @media (max-width:740px){.hero-grid{grid-template-columns:1fr;row-gap:10px}}
+
+    .logo{display:flex;align-items:center;justify-content:center}
+    .logo img{width:100px;height:100px;object-fit:contain;border-radius:14px;background:inherit;border:2px solid transparent;
+      
+      background-origin:border-box;background-clip:padding-box,border-box;box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 0 8px rgba(16,185,129,.12)}
+    @media (max-width:740px){.logo img{width:80px;height:80px}}
+
+    .hero-title{margin:2px 0 6px;color:white;text-align:center;font-weight:900;letter-spacing:.3px;font-size:clamp(22px,3.2vw,40px)}
+    .hero-meta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:#e8fff4;font-weight:700}
+    .meta-pill{padding:6px 10px;border-radius:999px;color:white;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+
+.center-circle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:220px;height:220px;border:2px solid rgba(255,255,255,.55);border-radius:50%}
+.halfway{position:absolute;left:50%;top:14px;bottom:14px;width:2px;background:rgba(255,255,255,.55);transform:translateX(-50%)}
+/* Main hero height */
+.hero { 
+  min-height: 250px;
+  height: 140px;        /* ← make this bigger for a taller hero (e.g., 460px) */
+  max-width: 1120px;
+  margin: 24px auto 12px;   /* top / sides / bottom spacing */
+}
+
+/* Extra headroom inside the hero */
+
+/* Center-circle size (purely visual, optional) */
+.center-circle { 
+  width: 220px; 
+  height: 220px;            /* ↑ bump up for a larger pitch circle */
+}
+
+/* Logo size (impacts vertical feel too) */
+
+
+    /* ===== LINEUPS • Pitch layout ===== */
+    
+</style>
+  <style>
+  /* === FONT SIZE TWEAKS (Predictions only) === */
+
+
+
+
+
+/* TABLE view (the first card in center column is All Predictions) */
+.center-column .card:first-child table thead th { font-size: 11px; }          /* smaller headers */
+.center-column .card:first-child table tbody td { font-size: px; }          /* smaller text */
+.center-column .card:first-child table tbody td:nth-child(3) {                /* Probability column */
+  font-size: 18px;                                                            /* bigger percent */
+  font-weight: 80;
+  max-width: 15 !important;
+}
+.center-column .card:first-child table tbody td:nth-child(4) .odds-value {    /* Fair Odds tiny */
+  font-size: 10px !important;
+  font-weight: 70;
+}
+
+/* TILES view (the green chips created by JS) */
+.bet-head { font-size: 12px; }          /* section titles smaller */
+.bet-chip { font-size: 12px; }          /* specifier text smaller */
+.bet-chip .meta { font-size: 18px; }    /* probability percent bigger */
+.bet-chip .odds {                       /* odds very small */
+  font-size: 10px;
+  font-weight: 80;
+  padding: 2px 6px;
+}
+
+/* If anything still looks big, this ensures any old rule doesn't win */
+.odds-value { font-size: 5px !important; font-weight: 70 !important; }
+
+    /* =========================
+       ULTRA ENHANCED Football UI - 3 Column Layout
+       (HTML & template logic untouched)
+       ========================= */
+    :root{
+      --bg:#0b0f16;
+      --bg-2:#0c1220;
+      --panel:#121826;
+      --panel-2:#0f172a;
+      --line:#1f2937;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --brand:#10b981;  /* emerald */
+      --brand-2:#22d3ee;/* cyan */
+      --accent:#f59e0b; /* amber */
+      --rose:#f43f5e;
+      --blue:#3b82f6;
+      --purple:#8b5cf6;
+      --glow: 0 6px 22px rgba(16,185,129,.18), 0 2px 8px rgba(34,211,238,.12);
+      --glow-accent: 0 6px 22px rgba(245,158,11,.18), 0 2px 8px rgba(245,158,11,.12);
+      --glow-rose: 0 6px 22px rgba(244,63,94,.18), 0 2px 8px rgba(244,63,94,.12);
+    }
+
+    /* Base */
+    *{box-sizing:border-box}
+   
+    @keyframes drift{
+      0%{transform:translate3d(0,0,0) rotate(0deg);}
+      50%{transform:translate3d(3vw,-4vh,0) rotate(2deg);}
+      100%{transform:translate3d(-2vw,2vh,0) rotate(-1deg);}
+    }
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 0.7fr 1.6fr 0.7fr; /* Middle column is ~2.3x wider */
+  gap: 24px;
+  align-items: start; /* Fixed typo: was 'stat' */
+}
+
+    .wrp{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+      display: grid;
+      grid-template-columns: 0.5fr 1fr 0.5fr;
+      gap: 20px;
+      align-items: start;
+    }
+    
+    @media (max-width: 1100px) {
+      .wap {
+        grid-template-columns: 1fr 1fr;
+      }
+      .center-column {
+        grid-column: 1 / span 2;
+        order: 1;
+      }
+      .left-column {
+        order: 2;
+      }
+      .right-column {
+        order: 3;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+      .center-column {
+        grid-column: 1;
+      }
+    }
+    
+    .left-column, .center-column, .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .center-column{
+      max-width: 120;
+    }
+    .muted{color:var(--muted)}
+    .center{text-align:center}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:860px){ .grid2{grid-template-columns:1fr} }
+
+    /* Cards — enhanced glass + animated border */
+
+
+    /* First card = Enhanced Scoreboard feel */
+    .header-card{
+      grid-column: 1 / span 3;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)) padding-box,
+        conic-gradient(from 180deg at 50% 50%, rgba(34,211,238,.55), rgba(16,185,129,.55), rgba(245,158,11,.55), rgba(34,211,238,.55)) border-box;
+      border:1.5px solid transparent;
+      padding: 16px 20px;
+      animation: pulseBorder 8s infinite alternate;
+    }
+    
+    @keyframes pulseBorder {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), var(--glow); }
+      50% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.6), var(--glow); }
+      100% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.4), var(--glow); }
+    }
+    
+    .flex{display:flex;align-items:center;gap:10px}
+    .header-card .flex strong{
+      font-size:clamp(20px,3.5vw,28px);
+      letter-spacing:.2px;
+      text-shadow:0 2px 4px rgba(0,0,0,.5);
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 800;
+    }
+    .header-card .muted{
+      font-weight:700; letter-spacing:.08em;
+      padding:.4rem .8rem; border-radius:999px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+
+    /* Enhanced Logos with glow ring */
+ 
+
+    /* Enhanced Pills (formations, positions) */
+    .pill{
+      padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04)) padding-box,
+        linear-gradient(135deg, var(--brand), var(--brand-2)) border-box;
+      border:1px solid transparent; color:#d1fae5;
+      box-shadow:inset 0 0 12px rgba(16,185,129,.2), 0 2px 4px rgba(0,0,0,.2);
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+
+    /* Enhanced Tables */
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:14px}
+    thead th{
+      text-align:left;color:#cbd5e1;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+      padding:14px 12px;border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      backdrop-filter:saturate(1.2);
+      font-weight: 700;
+    }
+    tbody td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:14px}
+    tbody tr:nth-child(odd){background:rgba(255,255,255,.03)}
+    tbody tr{
+      transition: all 0.2s ease;
+    }
+    tbody tr:hover{
+      background:rgba(34,211,238,.1);
+      transform: translateX(4px);
+    }
+    tbody td:nth-child(3), tbody td:nth-child(4){
+      text-align:center;font-variant-numeric:tabular-nums;font-weight:600
+    }
+    /* Highlight home/away rows in standings (you already set inline bg) */
+    tbody tr[style*="background:#111827"]{
+      background:
+        linear-gradient(180deg, rgba(16,185,129,.25), rgba(16,185,129,.08)) !important;
+      box-shadow:inset 0 0 0 1px rgba(16,185,129,.4), 0 2px 4px rgba(0,0,0,.1);
+      color:#ecfeff; font-weight:700;
+    }
+
+    /* Enhanced Section headers inside cards */
+    .card strong{
+      display:inline-block;
+      font-size:16px; letter-spacing:.05em;
+      background:
+        linear-gradient(90deg, rgba(34,211,238,.35), rgba(16,185,129,.35), rgba(245,158,11,.35));
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));
+      margin-bottom: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* Enhanced Lists (lineups / form) */
+    ul{list-style:none;padding-left:0;margin:0}
+    ul li{
+      padding:8px 12px; border-radius:12px;
+      background:rgba(255,255,255,.03); margin:6px 0;
+      display:flex;align-items:center;gap:10px;justify-content:space-between;
+      border:1px solid rgba(255,255,255,.06);
+      transition: all 0.2s ease;
+    }
+    ul li:hover{
+      background:rgba(34,211,238,.09); 
+      border-color:rgba(34,211,238,.3);
+      transform: translateX(4px);
+    }
+
+    /* Enhanced Microchips for small meta texts inside lists */
+    ul li .muted{
+      background:rgba(255,255,255,.08); 
+      padding:3px 10px; 
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Tiny utilities */
+    .flex{gap:10px}
+    th,td{vertical-align:middle}
+    .muted.strong{color:#d1d5db;font-weight:600}
+    .wrap .card .muted{opacity:.9}
+
+    /* Scrollbar polish on WebKit (keeps it neat on smaller screens) */
+    ::-webkit-scrollbar{height:10px;width:10px}
+    ::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:999px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(180deg, var(--brand), var(--brand-2));border-radius:999px}
+    ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg, var(--brand-2), var(--accent))}
+
+    /* NEW: Form indicators */
+    .form-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .form-W { background-color: var(--brand); }
+    .form-D { background-color: var(--accent); }
+    .form-L { background-color: var(--rose); }
+    
+    /* NEW: Progress bars for probabilities */
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+      transition: width 1s ease-in-out;
+    }
+    
+    /* NEW: Badge for result indicators */
+    .result-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .result-W { background: rgba(16, 185, 129, 0.2); color: var(--brand); }
+    .result-D { background: rgba(245, 158, 11, 0.2); color: var(--accent); }
+    .result-L { background: rgba(244, 63, 94, 0.2); color: var(--rose); }
+    
+    /* NEW: Animation for important elements */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .card {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* NEW: H2H specific styling */
+    .h2h-row {
+      transition: all 0.3s ease;
+    }
+    
+    .h2h-row:hover {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent) !important;
+    }
+    
+    /* NEW: Color coding for market rows */
+    tr:nth-child(3n+1) { --row-accent: rgba(16, 185, 129, 0.05); }
+    tr:nth-child(3n+2) { --row-accent: rgba(34, 211, 238, 0.05); }
+    tr:nth-child(3n+3) { --row-accent: rgba(245, 158, 11, 0.05); }
+    
+    tbody tr { background: var(--row-accent) !important; }
+    
+    /* NEW: Key stats highlights */
+    .stat-highlight {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    
+    /* NEW: Odds styling for betting section */
+    .odds-value {
+      font-size: 8px;
+      font-weight: 7;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    
+    /* NEW: Team strength indicators */
+    .strength-meter {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    
+    .strength-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+    
+    /* NEW: Player rating circles */
+    .player-rating {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .prob-text {
+  font-size: 13px;   /* smaller text */
+  font-weight: 600;  /* semi-bold */
+  color: #d1fae5;    /* light emerald, you can change */
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+/* Adjust odds text (already has .odds-value but you can tweak) */
+.odds-value {
+  font-size: 8px;   /* make odds smaller or larger */
+  font-weight: 7;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* Progress bar tweaks */
+.progress-container {
+  height: 4px;       /* thinner bar */
+  margin-top: 3px;
+}
+    /* === Bet tiles (like the screenshot) === */
+.bet-accordion { display:flex; flex-direction:column; gap:14px; }
+.bet-section { border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); }
+.bet-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; font-weight:800; letter-spacing:.02em;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  cursor:pointer; user-select:none;
+}
+.bet-head .caret { transition: transform .2s ease; }
+.bet-body { padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:680px){ .bet-body{ grid-template-columns:1fr; } }
+
+.bet-chip {
+  display:flex; align-items:center; justify-content:space-between; gap:5px;
+  padding:14px 16px; border-radius:10px; font-weight:700;
+  background:linear-gradient(180deg, #16a34a 0%, #10b981 60%, #059669 100%);
+  color:#fff; box-shadow: var(--glow);
+}
+.bet-chip .meta { font-size:12px; opacity:.95; font-weight:600; }
+.bet-chip .odds { font-size:18px; font-weight:900; background:rgba(255,255,255,.15);
+  padding:4px 10px; border-radius:8px; }
+
+.bet-prog { width:100%; height:6px; border-radius:6px; overflow:hidden; background:rgba(255,255,255,.25); margin-top:8px; }
+.bet-bar  { height:100%; background:linear-gradient(90deg, #34d399, #22d3ee); width:0%; transition:width .9s ease; }
+
+.bet-section.closed .bet-body{ display:none; }
+.bet-section.closed .bet-head .caret{ transform:rotate(-90deg); }
+
+/* === FINAL OVERRIDES FOR ODDS SIZES === */
+
+/* Table view (Fair Odds column) */
+.center-column .card:first-child table tbody td:nth-child(4) .odds-value{
+  font-size: 10px !important;
+  font-weight: 700 !important;   /* 700, not 70 */
+  letter-spacing: .02em;
+  padding: 2px 6px !important;
+}
+
+/* Tiles view (green chips created by JS) */
+.bet-chip .odds{
+  font-size: 10px !important;
+  font-weight: 800 !important;   /* 800, not 80 */
+  padding: 2px 5px !important;
+  line-height: 1 !important;
+}
+
+
+/* === SHRINK THE GREEN TILES (A • 30.6% • 3.27 odd) === */
+
+/* Make each tile narrower and reduce gaps */
+.bet-body{
+  gap: 2px !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; /* was 1fr 1fr */
+}
+
+/* Compact the chip box itself */
+.bet-chip{
+  padding: 6px 8px !important;   /* was 14px 16px */
+  border-radius: 5px !important;   /* was 10px */
+  font-size: 15px !important;      /* specifier text */
+  line-height: 1.0 !important;
+  max-width: 6px !important:
+}
+
+.wap{max-width:1280px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr 320px;gap:20px}
+@media (max-width:1100px){.wrap{grid-template-columns:1fr 1fr}.center{grid-column:1/span 2}}
+@media (max-width:780px){.wrap{grid-template-columns:1fr}.center{grid-column:1}}
+
+
+/* Card */
+.card{position:relative;border-radius:16px;border:1px solid rgba(255,255,255,.08);
+background:var(--glass);box-shadow:var(--shadow);padding:16px}
+.card:hover{transform:translateY(-2px);transition:.18s ease}
+.card h3{margin:0 0 10px;font-size:15px;letter-spacing:.05em;text-transform:uppercase;
+background:linear-gradient(90deg, var(--cyan), var(--success), var(--gold));
+-webkit-background-clip:text;background-clip:text;color:transparent}
+
+
+
+/* Keep probability readable but tighter */
+.bet-chip .meta{
+  font-size: 16px !important;  /* you can try 15–17 */
+  line-height: 1.0 !important;
+  margin-top: 2px !important;
+}
+
+/* Slimmer progress bar */
+.bet-prog{ height: 4px !important; margin-top: 6px !important; }
+
+/* Make the odds pill smaller */
+.bet-chip .odds{
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  padding: 1px 5px !important;
+  line-height: 1 !important;
+}
+/* Sub-headers inside OU sections */
+.bet-subhead{
+  font-size:12px; font-weight:800; letter-spacing:.04em;
+  text-transform:uppercase; opacity:.9;
+  margin:6px 2px 6px; padding:2px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+/* Constrain page content to Tailwind's max-w-7xl */
+.wp{
+  max-width: 55rem !important;   /* 7xl = 1280px */
+  mrgin-left: auto !important;
+  magin-right: auto !important;
+  padding-left: 1rem !important;  /* optional: comfy side padding */
+  padding-right: 1rem !important;
+  grid-template-columns: 0.5fr 1.0fr 0.5fr !important;
+}
+
+/* --- Keep TABLE probability + odds on one line --- */
+
+
+/* Optional: slightly scale everything down (use one of these) */
+/* .bet-chip{ transform: scale(.96); transform-origin: top left; } */
+.team{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.team-name{font-weight:900;font-size:clamp(14px,1.8vw,18px);letter-spacing:.3px;text-transform:uppercase;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+
+  </style>
+</head>
+<style>
+
+/* Global (helps prevent padding from "widening" the box) */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+
+/* Centered 1120px grid wrapper */
+.wrap, .wrp, .wap {
+  width: 100%;
+  max-width: 1150px;
+  margin-inline: auto;         /* robust centering (LTR + RTL) */
+  padding-inline: 20px;        /* only horizontal padding */
+  padding-block: 20px;         /* vertical padding */
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 320px; /* prevent overflow push */
+  gap: 20px;
+  align-items: start;
+}
+
+
+</style>
+ 
+{% if venue.exists and venue.data.image_url %}
+  <section class="hero" 
+    style="background: url('{{ venue.data.image_url }}') center/cover no-repeat;">
+{% else %}
+  <section class="hero" 
+    style="background:
+      repeating-linear-gradient(90deg, rgba(17,94,50,.38) 0 14px, rgba(17,94,50,.28) 14px 28px),
+      radial-gradient(1200px 600px at 50% -20%, rgba(16,185,129,.25), transparent 60%),
+      var(--deep);
+      filter:saturate(1.15);">
+{% endif %}
+
+
+<div class="center-circle"></div>
+<div class="halfway"></div>
+<div class="hero-inner">
+<div class="hero-grid">
+<div class="team team--home">
+<div class="logo">{% if match.home_logo %}<img src="{{ match.home_logo }}" alt="{{ match.home }} logo">{% endif %}</div>
+<div class="team-namer">{{ match.home }}</div>
+</div>
+
+
+<div>
+{% if match.league_id %}<div class="row-space" style="justify-content:center;margin-bottom:8px">
+<span class="meta-pill">{{ match.league }}</span>
+</div>{% endif %}
+<h1 class="hero-title"> vs </h1>
+<div class="hero-meta">
+  {% if match.kickoff_label %}
+    <span class="meta-pill">{{ match.kickoff_label }}</span>
+  {% endif %}
+
+  {% if venue.exists %}
+    {% with v=venue.data %}
+      <span class="meta-pill">{{ v.name }}</span>
+      <span class="meta-pill">{{ v.city }}{% if v.city and v.country %}, {% endif %}{{ v.country }}</span>
+      {% if v.capacity %}<span class="meta-pill">Capacity: {{ v.capacity }}</span>{% endif %}
+    {% endwith %}
+  {% endif %}
+</div>
+
+
+
+{% if one_x_two %}
+<div class="odds-row">
+{% for o in one_x_two %}
+<div class="odd">
+{% if o.bookmaker %}<span class="bk">{{ o.bookmaker }}</span>{% endif %}
+<span class="val">{{ o.price|floatformat:2 }}</span>
+<span class="lbl">
+{% if o.selection == 'H' %}Home{% elif o.selection == 'D' %}Draw{% elif o.selection == 'A' %}Away{% else %}{{ o.selection }}{% endif %}
+</span>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+</div>
+
+
+<div class="team team--away">
+<div class="logo">{% if match.away_logo %}<img src="{{ match.away_logo }}" alt="{{ match.away }} logo">{% endif %}</div>
+<div class="team-namer">{{ match.away }}</div>
+</div>
+</div>
+</div>
+</section>
+
+<div class="wrap">
+
+
+
+  <!-- Left Column: H2H and Forms -->
+  <div class="left-column">
+    
+<!-- === SPORT VIBE FORM CARD (NAMESPACED) === -->
+<div class="gp-scope">
+  <style>
+    .gp-scope{
+      --gp-ink:#0B0F16;         /* dark background */
+      --gp-deep:#0E1B2E;        /* dark-blue secondary */
+      --gp-gold:#D4AF37;        /* accents / logo ring */
+      --gp-text:#FFFFFF;        /* main text */
+      --gp-muted:#C7CEDA;       /* soft text */
+      --gp-line:rgba(255,255,255,.12);
+      --gp-emr:#10B981;         /* emerald success */
+      --gp-amber:#F59E0B;       /* draw */
+      --gp-red:#EF4444;         /* loss */
+      --gp-glass:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      --gp-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+
+    .gp-form-card{
+      background: var(--gp-glass);
+      border: 1px solid var(--gp-line);
+      border-radius: 16px;
+      color: var(--gp-text);
+      box-shadow: var(--gp-shadow);
+      padding: 16px;
+      position: relative;
+      isolation: isolate;
+    }
+    .gp-form-card::before{
+      /* thin gold accent at the top */
+      content:""; position:absolute; left:12px; right:12px; top:0; height:3px;
+      background: linear-gradient(90deg, var(--gp-gold), var(--gp-emr));
+      border-radius: 0 0 6px 6px;
+    }
+
+    /* Header */
+    .gp-head{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .gp-title{
+      display:flex; align-items:center; gap:8px; min-width:0;
+      font-weight: 900; letter-spacing:.3px;
+    }
+    .gp-title span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .gp-ico{ width: 18px; height: 18px; flex:0 0 auto; color: var(--gp-gold); }
+    .gp-team-logo{
+      width: 28px; height: 28px; border-radius: 8px; background:#fff; object-fit: contain;
+      border:2px solid transparent;
+      background-image: linear-gradient(#fff,#fff), linear-gradient(135deg, var(--gp-gold), var(--gp-emr));
+      background-origin: border-box; background-clip: padding-box, border-box;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+
+    /* Last 5 */
+    .gp-last5{ display:flex; align-items:center; gap:10px; margin:8px 0 12px; flex-wrap:wrap; }
+    .gp-last5-label{
+      display:flex; align-items:center; gap:6px; color:var(--gp-muted); font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+      font-size:11px;
+    }
+    .gp-chip{ width:22px; height:22px; border-radius:6px; font-size:12px; font-weight:900;
+      align-items:center; justify-content:center; color:#082c22; }
+    .gp-chip.W{ background:#34d399; }  /* emerald */
+    .gp-chip.D{ background:#fbbf24; }  /* amber */
+    .gp-chip.L{ background:#f87171; }  /* red */
+
+    /* KPIs */
+    .gp-kpis{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px; }
+    .gp-kpi{
+      background: var(--gp-glass);
+      border: 1px solid var(--gp-line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .gp-kpi .gp-kpi-label{ font-size:11px; color:#cbd5e1; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+    .gp-kpi .gp-kpi-value{ font-size:18px; font-weight:800; color:#e5f7f0; margin-bottom:6px; }
+    .gp-kpi .gp-bar{ height:6px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+    .gp-kpi .gp-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--gp-emr), #22D3EE); transition:width .8s ease; }
+
+    /* Matches */
+    .gp-matches{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+    .gp-match{
+      display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+      padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--gp-line);
+    }
+    .gp-match:hover{ background:rgba(34,211,238,.09); border-color:rgba(34,211,238,.28); transform:translateX(3px); transition:.18s ease; }
+    .gp-left{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+    .gp-date{ display:flex; align-items:center; gap:6px; font-weight:700; }
+    .gp-venue{ display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:999px;
+      background: rgba(255,255,255,.12); border:1px solid var(--gp-line); color:#e6fbf5; font-size:12px; font-weight:700; }
+    .gp-muted{ color: var(--gp-muted); }
+    .gp-opp{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 46vw; }
+
+    .gp-right{ display:flex; align-items:center; gap:6px; }
+    .gp-score{ padding:3px 8px; border-radius:6px; font-weight:800; background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06)); }
+    .gp-badge{ padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800; }
+    .gp-badge.W{ background:rgba(16,185,129,.2); color:var(--gp-emr); }     /* Win */
+    .gp-badge.D{ background:rgba(245,158,11,.25); color:var(--gp-amber); }  /* Draw */
+    .gp-badge.L{ background:rgba(239,68,68,.23); color:var(--gp-red); }     /* Loss */
+
+    /* Row accent by result (left border) */
+    .gp-match[data-result="W"]{ box-shadow: inset 3px 0 0 0 var(--gp-emr); }
+    .gp-match[data-result="D"]{ box-shadow: inset 3px 0 0 0 var(--gp-amber); }
+    .gp-match[data-result="L"]{ box-shadow: inset 3px 0 0 0 var(--gp-red); }
+
+    /* Responsive */
+    @media (max-width:700px){
+      .gp-opp{ max-width: 52vw; }
+      .gp-kpis{ grid-template-columns: 1fr; }
+    }
+    .card--scroll{
+  /* fixed height (or clamp it to be responsive) */
+  height: 520px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  /* nice feel + stable layout when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Dark, thin scrollbar */
+.card--scroll{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.card--scroll::-webkit-scrollbar{ width: 10px; }
+.card--scroll::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.card--scroll::-webkit-scrollbar-track{ background: transparent; }
+
+  </style>
+
+  <!-- CARD -->
+  <div class="card--scroll">
+   <div class="gp-form-card" id="home-form-card" aria-label="Team recent form">
+    <div class="gp-head">
+      <!-- title left -->
+      <div class="gp-title" title="Form — {{ match.home }}">
+        <!-- Football icon -->
+        <svg class="gp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M7 7l5-2 5 2 1 4-4 5h-4L6 11l1-4z"></path>
+        </svg>
+             <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.home }}">form -
+  {{ match.home }}</span>
+  
+</h4>
+      </div>
+
+      <!-- spacer (middle) -->
+      <div></div>
+
+      <!-- logo right -->
+      {% if match.home_logo %}
+        <img src="{{ match.home_logo }}" alt="{{ match.home }} logo" class="gp-team-logo" loading="lazy">
+      {% endif %}
+    </div>
+
+    {% if form_home.last and form_home.last|length > 0 %}
+      <!-- Last 5 -->
+      <div class="gp-last5">
+        <div class="gp-last5-label">
+          <!-- calendar icon -->
+          <svg class="gp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Last 5</span>
+        </div>
+        <div class="gp-chips flex p-2" title="{{ form_home.summary }}">
+          {% for result in form_home.summary|slice:":5" %}
+            <span class="gp-chip {{ result }} p-1">{{ result }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="gp-kpis">
+        <div class="gp-kpi">
+          <div class="gp-kpi-label">Pts (L5)</div>
+          <div class="gp-kpi-value gp-kpi-pts">—</div>
+          <div class="gp-bar"><div class="gp-fill gp-kpi-bar"></div></div>
+        </div>
+        <div class="gp-kpi">
+          <div class="gp-kpi-label">Record</div>
+          <div class="gp-kpi-value gp-kpi-record">—</div>
+        </div>
+      </div>
+
+      <!-- Matches -->
+      <ul class="gp-matches">
+        {% for it in form_home.last %}
+          <li class="gp-match" data-result="{{ it.result|upper }}">
+            <div class="gp-left">
+              <div class="gp-date">
+                <!-- whistle icon -->
+                <svg class="gp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 14a5 5 0 10-4 2h3l3 3v-3l2-2z"></path>
+                  <circle cx="8" cy="14" r="3"></circle>
+                </svg>
+                <strong>{{ it.date }}</strong>
+              </div>
+              {% if it.venue %}
+                <span class="gp-venue" title="Venue">
+                  <!-- stadium icon -->
+                  <svg class="gp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 10c3-2 15-2 18 0v7c-3 2-15 2-18 0v-7z"></path>
+                    <path d="M3 10l9 4 9-4"></path>
+                    <path d="M9 4l3 2 3-2"></path>
+                  </svg>
+                  {{ it.venue }}
+                </span>
+              {% endif %}
+              <span class="gp-muted">vs</span>
+              <span class="gp-opp">{{ it.opp }}</span>
+            </div>
+            <div class="gp-right">
+              <span class="gp-score">{{ it.score }}</span>
+              <span class="gp-badge {{ it.result }}">{{ it.result }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="gp-muted">No recent results.</div>
+    {% endif %}
+  </div>
+  </div>
+</div>
+
+<script>
+  // === KPIs: compute points + record (W=3, D=1, L=0) with namespaced selectors ===
+  document.addEventListener('DOMContentLoaded', () => {
+    const ptsMap = { W:3, D:1, L:0 };
+
+    document.querySelectorAll('.gp-form-card').forEach(card => {
+      // Prefer the chips (Last 5). Fallback to first five match rows.
+      const chips = Array.from(card.querySelectorAll('.gp-chip'))
+        .slice(0,5)
+        .map(n => n.textContent.trim().toUpperCase());
+
+      let last5 = chips.length ? chips :
+        Array.from(card.querySelectorAll('.gp-match'))
+             .slice(0,5)
+             .map(li => (li.getAttribute('data-result') || '').toUpperCase());
+
+      let W=0, D=0, L=0, pts=0;
+      last5.forEach(r => { if(r==='W') W++; else if(r==='D') D++; else if(r==='L') L++; pts += (ptsMap[r]||0); });
+      const pct = Math.round((pts/15)*100);
+
+      const ptsEl = card.querySelector('.gp-kpi-pts');
+      const recEl = card.querySelector('.gp-kpi-record');
+      const barEl = card.querySelector('.gp-kpi-bar');
+
+      if (ptsEl) ptsEl.textContent = `${pts} / 15`;
+      if (recEl) recEl.textContent = `${W}-${D}-${L}`;
+      if (barEl) requestAnimationFrame(() => { barEl.style.width = pct + '%'; });
+    });
+  });
+</script>
+<style>
+/* ---- Pitch container ---- */
+.pitch {
+  position: relative;
+  border-radius: 16px;
+  padding: 8px;                 /* inner border margin */
+  background:
+    linear-gradient(0deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 50% / 100% 16%,
+    repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 0.5px, transparent 0 80px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.10) 0 2px, transparent 3px);
+  background-color: #0a5f1a;    /* pitch green */
+  box-shadow: 0 8px 24px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.15);
+  aspect-ratio: 10 / 14;        /* tall pitch keeps rows from crowding */
+  overflow: hidden;
+}
+
+/* Center circle + halfway line (optional since you already had them) */
+.pitch .circle, .pitch .half {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.pitch .circle::after{
+  content:""; position:absolute; left:50%; top:50%;
+  width:22%; aspect-ratio:1/1; transform:translate(-50%,-50%);
+  border:2px solid rgba(255,255,255,.35); border-radius:50%;
+}
+.pitch .half::after{
+  content:""; position:absolute; left:0; right:0; top:50%;
+  border-top:2px solid rgba(255,255,255,.35);
+}
+
+/* ---- Rows grid: 5 tracks (GK / DEF / MID / FWD / spacer) ---- */
+.rows{
+  position:absolute; inset: 6% 6%;               /* keep players off the chalk lines */
+  display:grid; grid-template-rows: repeat(5, 1fr);
+  row-gap: clamp(10px, 2.2vh, 20px);
+}
+
+/* Each row becomes a "just the players" grid that auto-creates a column per player,
+   centers the whole line, and keeps even spacing. */
+.row{
+  display:grid;
+  grid-auto-flow: column;         /* one column per child (player) */
+  grid-auto-columns: 1fr;         /* equal widths across the row */
+  justify-items: center;          /* center each player in their cell */
+  align-content: center;
+  column-gap: clamp(10px, 2vw, 22px);
+  min-height: 0;                  /* prevent overflow from forcing rows apart */
+}
+
+/* Player card stays compact and can’t stretch the layout */
+.player{
+  display:grid; grid-template-rows: auto auto;
+  justify-items:center; align-items:start;
+  min-width: 64px;                /* enough for badge + short name */
+  max-width: 120px;               /* long names won’t blow the row */
+}
+
+/* Badge + number (you already had this; keeping sizes consistent) */
+.badge{
+  position: relative;
+  display:flex; align-items:center; justify-content:center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(0,0,0,.08); overflow:hidden;
+}
+.player-img{
+  width: 34px; height: 34px; border-radius:50%;
+  object-fit:cover; margin-right:0; vertical-align:middle;
+}
+.num{
+  position:absolute; bottom:2px; right:2px;
+  font-size:.70rem; font-weight:700;
+  background: rgba(0,0,0,.60); color:#fff;
+  padding: 1px 4px; border-radius:4px;
+}
+
+/* Name: clamp size, ellipsis, center — never breaks layout */
+.pname{
+  margin-top:6px;
+  font-size: clamp(.72rem, .9vw, .85rem);
+  line-height: 1.1;
+  max-width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prevent any ancestor padding from faking misalignment */
+.pitch-card{ isolation:isolate; }
+
+/* Responsive: tighten spacing on very narrow screens */
+@media (max-width: 480px){
+  .rows{ inset: 6% 4%; }
+  .row{ column-gap: 10px; }
+  .badge{ width: 42px; height: 42px; }
+  .player-img{ width: 30px; height: 30px; }
+}
+/* Keep the players block truly centered inside the pitch */
+
+
+/* Make one column per player that can SHRINK (prevents right overflow) */
+.pitch .row{
+
+  grid-auto-columns: minmax(0, 1fr);  /* <-- critical: allows shrinking */
+ 
+}
+
+/* Let the grid cells actually shrink (default min-width:auto overflows) */
+
+
+/* Names: ellipsis rather than pushing layout */
+
+
+</style>
+
+<div class="card pitch-card">
+<div class="pitch-head">
+<h3>👥 Lineup — {{ match.home }}</h3>
+{% if home_lineup.formation %}<span class="formation-pill">{{ home_lineup.formation }}</span>{% endif %}
+</div>
+{% if home_lineup.exists %}
+<div class="pitch">
+  <div class="circle"></div>
+  <div class="half"></div>
+  <div class="rows">
+
+    <!-- GK row -->
+    <div class="row">
+      {% for p in home_lineup.starters %}
+        {% if p.pos and 'G' in p.pos %}
+          <div class="player">
+            <div class="badge" title="{{ p.name }}">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">
+                {% if p.number %}#{{ p.number }}{% else %}GK{% endif %}
+              </span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- DEF row -->
+    <div class="row">
+      {% for p in home_lineup.starters %}
+        {% if p.pos and 'D' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}D{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- MID row -->
+    <div class="row">
+      {% for p in home_lineup.starters %}
+        {% if p.pos and 'M' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}M{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- FWD row -->
+    <div class="row">
+      {% for p in home_lineup.starters %}
+        {% if p.pos and 'F' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}F{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Spacer -->
+    <div class="row"></div>
+  </div>
+</div>
+
+{% if home_lineup.bench and home_lineup.bench|length > 0 %}
+<details class="bench">
+  <summary>Bench ({{ home_lineup.bench|length }})</summary>
+  <ul>
+    {% for p in home_lineup.bench %}
+      <li>
+        {% if p.id %}
+          <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+               alt="{{ p.name }}" class="bench-img">
+        {% endif %}
+        <span class="dot">{% if p.number %}{{ p.number }}{% else %}+{% endif %}</span>
+        {{ p.name }}
+        {% if p.pos %}<span class="meta-pill">{{ p.pos }}</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+
+{% else %}
+<div class="muted" style="padding:16px">No lineup available.</div>
+{% endif %}
+
+<style>
+.player-img {
+  width: 34px; height: 34px; border-radius: 50%;
+  object-fit: cover; margin-right: 4px; vertical-align: middle;
+}
+.bench-img {
+  width: 24px; height: 24px; border-radius: 50%;
+  object-fit: cover; margin-right: 6px; vertical-align: middle;
+}
+.badge {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.05); border-radius: 50%;
+  width: 48px; height: 48px; overflow: hidden;
+}
+.num {
+  position: absolute; bottom: 2px; right: 2px;
+  font-size: 0.7rem; font-weight: 600;
+  background: rgba(0,0,0,.6); color: #fff;
+  padding: 1px 4px; border-radius: 4px;
+}
+</style>
+
+</div>
+
+
+<div class="scroll2">
+  <div class="inj-col mt-10">
+    <div class="sticky-head">
+     <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.home }}">{{ match.home }}</span>
+  <span class="label"> - Injured Players</span>
+</h4>
+</div>
+      {% if injuries_home %}
+        <div class="inj-list">
+          {% for inj in injuries_home %}
+            <div class="inj-card">
+              <div class="inj-avatar">
+                {% if inj.player_id %}
+                  <img src="https://media.api-sports.io/football/players/{{ inj.player_id }}.png"
+                       alt="{{ inj.player_name|default:'Player' }}">
+                {% else %}
+                  <svg viewBox="0 0 40 40" width="42" height="42">
+                    <circle cx="20" cy="20" r="20" fill="#e5e7eb"></circle>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="inj-body">
+                <div class="inj-name">{{ inj.player_name|default:"Unknown" }}</div>
+                <div class="inj-sub">
+                  {% if inj.type %}<span class="inj-type">{{ inj.type }}</span>{% endif %}
+                  {% if inj.reason %}<span class="inj-reason">{{ inj.reason }}</span>{% endif %}
+                  {% if inj.date %}<span class="inj-date">{{ inj.date|date:"Y-m-d" }}</span>{% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">No recent injuries found.</div>
+      {% endif %}
+    </div>
+     </div>
+
+<style>
+.scroll2{
+  /* fixed height (or clamp it to be responsive) */
+  height: 410px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  /* nice feel + stable layout when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Dark, thin scrollbar */
+.scroll2{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.scroll2::-webkit-scrollbar{ width: 10px; }
+.scroll2::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.scroll2::-webkit-scrollbar-track{ background: transparent; }
+
+</style>
+
+
+
+
+
+
+
+
+<!-- HOME COLUMN -->
+<div class="scroll2">
+    <div class="xfer-col mt-10">
+    <div class="sticky-head">
+      <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.home }}">{{ match.home }}</span>
+  <span class="label"> - Latest Transfers</span>
+</h4>
+</div>
+      {% if transfers.home %}
+      <div class="xfer-list">
+        {% for tr in transfers.home %}
+          <div class="xfer-card">
+            <div class="xfer-avatar">
+              {% if tr.player_id %}
+                <img src="https://media.api-sports.io/football/players/{{ tr.player_id }}.png"
+                     alt="{{ tr.player_name|default:'Player' }}">
+              {% else %}
+                <!-- fallback block -->
+                <svg viewBox="0 0 40 40" width="42" height="42">
+                  <circle cx="20" cy="20" r="20" fill="#e5e7eb"></circle>
+                </svg>
+              {% endif %}
+            </div>
+
+            <div class="xfer-body">
+              <div class="xfer-name">
+                {{ tr.player_name|default:"Unknown" }}
+              </div>
+
+              <div class="xfer-sub">
+                <span class="xfer-move" title="{{ tr.from_team }} → {{ tr.to_team }}">
+                  {% if tr.from_team_id %}
+                    <span class="crest">
+                      <img src="https://media.api-sports.io/football/teams/{{ tr.from_team_id }}.png" alt="{{ tr.from_team }}">
+                    </span>
+                  {% endif %}
+
+                  <!-- arrow -->
+                  <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h12M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+
+                  {% if tr.to_team_id %}
+                    <span class="crest">
+                      <img src="https://media.api-sports.io/football/teams/{{ tr.to_team_id }}.png" alt="{{ tr.to_team }}">
+                    </span>
+                  {% endif %}
+
+                  <span class="muted">
+                    {% if tr.from_team %}{{ tr.from_team }}{% else %}—{% endif %}
+                    → 
+                    {% if tr.to_team %}{{ tr.to_team }}{% else %}—{% endif %}
+                  </span>
+                </span>
+
+                {% if tr.type %}
+                  <span class="xfer-type">{{ tr.type }}</span>
+                {% endif %}
+
+                {% if tr.date %}
+                  <span class="xfer-date">{{ tr.date|date:"Y-m-d" }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <div class="empty">No recent transfers found.</div>
+      {% endif %}
+    </div>
+</div>
+
+
+
+<div class="scroll2 ">
+{% if trophies_home %}
+  <div class="trophy-col mt-10">
+    <div class="sticky-head">
+    <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.home }}">{{ match.home }}</span>
+  <span class="label">Honours</span>
+</h4>
+
+   </div>
+<ul class="trophy-list">
+  {% for tr in trophies_home %}
+    <li class="trophy-card {% if tr.place == 1 %}gold{% elif tr.place == 2 %}silver{% elif tr.place == 3 %}bronze{% else %}other{% endif %}">
+      <div class="trophy-avatar">
+        {% if tr.player_id %}
+          <img
+            src="https://media.api-sports.io/football/players/{{ tr.player_id }}.png"
+            alt="{{ tr.player_name|default:'Player' }}"
+            width="44" height="44" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        {% else %}
+          <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+            <circle cx="20" cy="20" r="20" fill="#9ca3af"></circle>
+          </svg>
+        {% endif %}
+      </div>
+
+      <div class="trophy-body">
+        <div class="trophy-title">
+          <span class="medal" title="Placement">
+            {% if tr.place == 1 %}🏆{% elif tr.place == 2 %}🥈{% elif tr.place == 3 %}🥉{% else %}🎖️{% endif %}
+          </span>
+          <strong class="name">{{ tr.player_name|default:"" }}</strong>
+          <span class="sep">—</span>
+          <span class="league">{{ tr.league|default:"" }}</span>
+        </div>
+
+        <div class="trophy-meta">
+          {% if tr.season %}<span class="chip">{{ tr.season }}</span>{% endif %}
+          {% if tr.place %}<span class="chip">Place {{ tr.place }}</span>{% endif %}
+          {% if tr.country %}<span class="chip">{{ tr.country }}</span>{% endif %}
+        </div>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{%endif%}
+</div>
+</div>
+</div>
+<style>
+
+/* === All Predictions: 3-per-row + premium dark theme === */
+/* Place AFTER your existing scripts/styles so it overrides the injected styles */
+.bet-accordion{
+  /* theme tokens */
+  --bg: #0b0f14;           /* near-black */
+  --bg-2: #0f1626;         /* dark blue depth */
+  --surface: #0d1321;
+  --surface-2: #0a0f1c;
+  --text: #ffffff;
+  --text-2: rgba(255,255,255,.85);
+  --muted: rgba(255,255,255,.65);
+  --border: rgba(255,255,255,.10);
+  color: var(--text);
+}
+
+/* 3 tiles per row (then 2, then 1) */
+.bet-accordion .bet-body:has(.bet-chip:nth-child(3):last-child){
+  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+}
+
+.bet-accordion .bet-body{
+  display: grid;                 /* already grid, but ensure */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 980px){
+  .bet-accordion .bet-body{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 560px){
+  .bet-accordion .bet-body{ grid-template-columns: minmax(0,1fr); }
+}
+
+/* section/card styling */
+.bet-accordion .bet-section{
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
+}
+.bet-accordion .bet-head{
+  background: linear-gradient(180deg, var(--bg-2), transparent);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+/* tile/chip */
+.bet-accordion .bet-chip{
+  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+/* ensure long spec names don't break layout */
+.bet-accordion .bet-chip > div:first-child{ min-width: 0; }
+.bet-accordion .bet-chip > div:first-child > div:first-child{
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* progress: white on dark for strong contrast */
+.bet-accordion .bet-prog{ background: rgba(255,255,255,.08); }
+.bet-accordion .bet-bar{ background: #fff !important; color: #fff !important; }
+
+/* odds on the right */
+.bet-accordion .bet-chip .odds{ color: #fff; white-space: nowrap; }
+
+/* keep gold hint for locked items */
+.bet-accordion .bet-chip.locked .meta{ color: #D4AF37; font-weight: 600; }
+
+
+
+
+
+
+
+</style>
+
+
+
+  <!-- Center Column: Betting Information -->
+  <div class="center-column">
+    {% if markets %}
+    <div class="card">
+      <strong>📊 All Predictions</strong>
+      <table>
+        <thead><tr><th>Market</th><th>Specifier</th><th class="center">Probability</th><th class="center">Fair Odds</th></tr></thead>
+        <tbody>
+        {% for r in markets %}
+          <tr>
+            <td>{{ r.market }}</td>
+            <td>{{ r.specifier }}</td>
+            <td class="center">
+            {% if r.p != None %}
+            {{ r.p|mul:100|floatformat:1 }}%
+        <div class="progress-container">
+            <div class="progress-bar" style="width: {{ r.p|mul:100|floatformat:1 }}%"></div>
+        </div>
+            {% else %}—{% endif %}
+        </td>
+
+            <td class="center">
+              {% if r.fair_odds != None %}
+                <span class="odds-value text-xs">{{ r.fair_odds|floatformat:2 }} odd</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+<style>
+
+.scroll3{
+  /* fixed height (or clamp it to be responsive) */
+  height: 500px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  /* nice feel + stable layout when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Dark, thin scrollbar */
+.scroll3{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.scroll3::-webkit-scrollbar{ width: 10px; }
+.scroll3::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.scroll3::-webkit-scrollbar-track{ background: transparent; }
+
+
+.scroll4{
+  /* fixed height (or clamp it to be responsive) */
+  height: 350px;                     /* or: height: clamp(320px, 55vh, 560px); */
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  /* nice feel + stable layout when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Dark, thin scrollbar */
+.scroll4{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.scroll4::-webkit-scrollbar{ width: 10px; }
+.scroll4::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.scroll4::-webkit-scrollbar-track{ background: transparent; }
+
+
+</style>
+
+
+    
+<div class="card scroll4">
+  <div class="sticky-head">
+      <strong>⚔️ Head-to-Head (latest)</strong>
+      </div>
+      {% if h2h_rows and h2h_rows|length > 0 %}
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Match</th><th class="center">Score</th><th class="center">Result</th></tr>
+        </thead>
+        <tbody>
+          {% for h in h2h_rows %}
+          <tr class="h2h-row">
+            <td>{{ h.date }}</td>
+            <td>{{ h.home }} vs {{ h.away }}</td>
+            <td class="center">{{ h.score }}</td>
+            <td class="center"><span class="result-badge result-{{ h.result }}">{{ h.result }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="muted">No recent head-to-head found.</div>
+      {% endif %}
+    </div>
+
+
+
+
+    
+    <div class="card scroll3 ">
+      <div class="flex" style="justify-content:space-between;">
+       
+         {% if standings_asof %}<span class="muted">as of {{ standings_asof }}</span>{% endif %}
+      </div>
+    {% if standings.exists %}
+    <div class="sticky-head">
+    <h3 class="one-line-wrap">
+  <span class="name" title="{{ match.away }}"><strong>📈 Standings (Season {{ standings.season_used }})</strong></span>
+ 
+</h3>
+  <h3 class="text-xl"></h3>
+  {% for group in standings.groups %}
+   
+    </div>
+    <table class="standings">
+      <thead>
+        <tr>
+          <th>Rank</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th>
+          <th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in group.rows %}
+          {% if row.team_id in standings.highlight_ids %}
+            <tr class="hl">
+          {% else %}
+            <tr>
+          {% endif %}
+              <td>{{ row.rank }}</td>
+              <td>{{ row.team_name }}</td>
+              <td>{{ row.played }}</td>
+              <td>{{ row.win }}</td>
+              <td>{{ row.draw }}</td>
+              <td>{{ row.loss }}</td>
+              <td>{{ row.gf }}</td>
+              <td>{{ row.ga }}</td>
+              <td>{{ row.gd }}</td>
+              <td>{{ row.points }}</td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+
+{% else %}
+  <div class="text-xs text-gray-500">No standings founded for this league yet.</div>
+{% endif %}
+
+  <style>
+  .standings tbody td{
+  padding:10px 10px; border-bottom:1px solid rgba(255,255,255,.06);
+  color: var(--text);
+}
+.standings tbody tr:nth-child(even) td{
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+}
+  table.standings { width:100%; border-collapse: collapse; }
+  table.standings th, table.standings td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  table.standings tr.hl { font-weight: 600; background: #f7f9ff; }
+</style>
+
+  </div>
+<!-- temporary debug -->
+<section class="card">
+  <h3>Recent Transfers</h3>
+
+  <style>.dark-sport {
+  background: radial-gradient(1200px 600px at 15% -10%, rgba(56,189,248,.06), transparent),
+              radial-gradient(1200px 700px at 120% 120%, rgba(125,211,252,.05), transparent),
+              var(--bg);
+  color: var(--text);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+/* === TRANSFERS ======================================= */
+.xfer-col { color: var(--text); }
+.xfer-col h4{
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--text);
+  /* subtle accent underline */
+  position: relative;
+}
+.xfer-col h4::after{
+  content:"";
+  height:2px; width: 46px; border-radius:2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  position:absolute; left:0; bottom:-6px; opacity:.9;
+}
+
+.xfer-list{ display:flex; flex-direction:column; gap:12px; }
+
+/* Card: dark, crisp, premium */
+.xfer-card{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) ,
+    linear-gradient(180deg, var(--surface), var(--surface-2));
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 8px 16px rgba(0,0,0,.35);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.xfer-card:hover{
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 12px 28px rgba(0,0,0,.45);
+}
+
+/* Avatar: ring + subtle glow */
+.xfer-avatar{
+  width:44px; height:44px; flex:0 0 44px; border-radius:50%;
+  display:grid; place-items:center; overflow:hidden;
+  background: radial-gradient(60% 60% at 50% 35%, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+              var(--bg-2);
+  border:1px solid var(--border);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.5) inset, 0 0 0 1px rgba(255,255,255,.06);
+}
+.xfer-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Body + text */
+.xfer-body{ flex:1 1 auto; min-width:0; }
+.xfer-name{
+  font-weight:700; line-height:1.15;
+  color: var(--text);
+  font-size: clamp(.95rem, 1.2vw, 1.05rem);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.xfer-sub{
+  margin-top:4px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  font-size:.88rem; color: var(--text-2);
+}
+
+/* Move strip: crests + arrow + names */
+.xfer-move{
+  display:flex; align-items:center; gap:8px;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crest{
+  width:20px; height:20px; flex:0 0 20px; border-radius:6px; overflow:hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  border:1px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.5) inset;
+}
+.crest img{ width:100%; height:100%; object-fit:contain; display:block; }
+
+.arrow{
+  width:18px; height:18px; color: var(--accent); opacity:.95;
+  flex: 0 0 18px;
+}
+
+/* Pills */
+.xfer-type{
+  font-size:.72rem; font-weight:700; letter-spacing:.02em;
+  padding:3px 8px; border-radius:999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.xfer-date{ font-size:.78rem; color: var(--muted); }
+.muted{ color: var(--muted); }
+
+/* Empty state */
+.empty{
+  padding:14px; text-align:center;
+  border:1px dashed var(--border); border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  color: var(--text-2);
+}
+
+/* Grid (if you use two columns somewhere) */
+.xfer-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width: 900px){ .xfer-grid{ grid-template-columns:1fr; } }
+
+/* Motion-respectful hover sparkle on accent elements */
+@media (prefers-reduced-motion: no-preference){
+  .xfer-card:hover .arrow{ transform: translateX(2px); transition: transform .15s ease; }
+}
+  </style>
+
+  <div class="xfer-grid">
+    
+
+    <!-- AWAY COLUMN -->
+    
+</section>
+
+
+
+
+
+
+
+  <style>
+/* === INJURIES (matches dark sports theme) ==================== */
+
+.inj-col { color: var(--text); }
+
+.inj-col h4{
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--text);
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.inj-col h4::after{
+  content:"";
+  height:2px; width:46px; border-radius:2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  position:absolute; left:0; bottom:-6px; opacity:.9;
+}
+
+.inj-list{ display:flex; flex-direction:column; gap:12px; }
+
+/* Card look aligned with .xfer-card */
+.inj-card{
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    linear-gradient(180deg, var(--surface), var(--surface-2));
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 8px 16px rgba(0,0,0,.35);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.inj-card:hover{
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 12px 28px rgba(0,0,0,.45);
+}
+
+/* Avatar matches transfers */
+.inj-avatar{
+  width:44px; height:44px; flex:0 0 44px; border-radius:50%;
+  display:grid; place-items:center; overflow:hidden;
+  background: radial-gradient(60% 60% at 50% 35%, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+              var(--bg-2);
+  border:1px solid var(--border);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.5) inset, 0 0 0 1px rgba(255,255,255,.06);
+}
+.inj-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Body + text */
+.inj-body{ min-width:0; flex:1 1 auto; }
+.inj-name{
+  font-weight:700; line-height:1.15;
+  color: var(--text);
+  font-size: clamp(.95rem, 1.2vw, 1.05rem);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inj-sub{
+  margin-top:4px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px;
+  font-size:.88rem; color: var(--text-2);
+}
+
+/* Pills + meta */
+.inj-type{
+  font-size:.72rem; font-weight:700; letter-spacing:.02em;
+  padding:3px 8px; border-radius:999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.inj-reason{ color: var(--text-2); }
+.inj-date{ font-size:.78rem; color: var(--muted); }
+
+/* Grid option (matches .xfer-grid) */
+.inj-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width: 900px){ .inj-grid{ grid-template-columns:1fr; } }
+
+/* Empty state consistent with transfers */
+.empty{
+  padding:14px; text-align:center;
+  border:1px dashed var(--border); border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  color: var(--text-2);
+}
+
+/* Motion nicety */
+@media (prefers-reduced-motion: no-preference){
+  .inj-card:hover { transform: translateY(-2px); }
+}
+</style>
+
+  <div class="inj-grid">
+    <!-- HOME -->
+    
+    <!-- AWAY -->
+  
+  </div>
+
+
+
+<style>
+.trophy-col { color: var(--text); }
+.trophy-col h4{
+  margin:0 0 12px; font-weight:700; letter-spacing:.02em; position:relative; display:inline-flex;
+}
+.trophy-col h4::after{
+  content:""; position:absolute; left:0; bottom:-6px; height:2px; width:46px; border-radius:2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.trophy-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
+
+.trophy-card{
+  --tone: var(--accent);                  /* default accent */
+  display:flex; gap:12px; align-items:flex-start;
+  padding:12px 14px; border-radius:14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    linear-gradient(180deg, var(--surface), var(--surface-2));
+  border:1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 16px rgba(0,0,0,.35);
+  position:relative; overflow:hidden;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.trophy-card::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:14px 0 0 14px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 90%, transparent), transparent);
+}
+.trophy-card:hover{
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tone) 40%, var(--border));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 12px 28px rgba(0,0,0,.45);
+}
+
+/* place-based color */
+.trophy-card.gold  { --tone:#f59e0b; }   /* gold/amber */
+.trophy-card.silver{ --tone:#cbd5e1; }   /* slate/silver */
+.trophy-card.bronze{ --tone:#b45309; }   /* bronze */
+
+/* content */
+.medal{ font-size:20px; line-height:1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.trophy-body{ min-width:0; flex:1 1 auto; }
+.trophy-title{ display:flex; align-items:center; gap:8px; min-width:0; }
+.trophy-title .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.trophy-title .league{ color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sep{ color:var(--muted); }
+
+.trophy-meta{ margin-top:6px; display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  font-size:.72rem; font-weight:700; letter-spacing:.02em;
+  padding:3px 8px; border-radius:999px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+/* empty state stays consistent with your other blocks */
+.empty{
+  padding:14px; text-align:center;
+  border:1px dashed var(--border); border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  color: var(--text-2);
+}
+
+</style>
+
+
+
+
+
+
+
+
+
+
+
+ </div>
+
+
+
+
+
+
+  <!-- Right Column: Lineups -->
+  <div class="right-column">
+  <!-- HOME -->
+  
+
+
+
+
+<!-- === AWAY • SPORT VIBE FORM CARD (separate namespace: ga-*) === -->
+<div class="ga-scope">
+  <style>
+    .ga-scope{
+      --ga-ink:#0B0F16;         /* dark background */
+      --ga-deep:#0E1B2E;        /* dark-blue secondary */
+      --ga-gold:#D4AF37;        /* accents / logo ring */
+      --ga-text:#FFFFFF;        /* main text */
+      --ga-muted:#C7CEDA;       /* soft text */
+      --ga-line:rgba(255,255,255,.12);
+      --ga-emr:#10B981;         /* emerald success */
+      --ga-amber:#F59E0B;       /* draw */
+      --ga-red:#EF4444;         /* loss */
+      --ga-glass:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      --ga-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+
+    .ga-form-card{
+      background: var(--ga-glass);
+      border: 1px solid var(--ga-line);
+      border-radius: 16px;
+      color: var(--ga-text);
+      box-shadow: var(--ga-shadow);
+      padding: 16px;
+      position: relative;
+      isolation: isolate;
+    }
+    .ga-form-card::before{
+      content:""; position:absolute; left:12px; right:12px; top:0; height:3px;
+      background: linear-gradient(90deg, var(--ga-gold), var(--ga-emr));
+      border-radius: 0 0 6px 6px;
+    }
+
+    /* Header */
+    .ga-head{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .ga-title{
+      display:flex; align-items:center; gap:8px; min-width:0;
+      font-weight: 900; letter-spacing:.3px;
+    }
+    .ga-title span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .ga-ico{ width: 18px; height: 18px; flex:0 0 auto; color: var(--ga-gold); }
+    .ga-team-logo{
+      width: 28px; height: 28px; border-radius: 8px; background:#fff; object-fit: contain;
+      border:2px solid transparent;
+      background-image: linear-gradient(#fff,#fff), linear-gradient(135deg, var(--ga-gold), var(--ga-emr));
+      background-origin: border-box; background-clip: padding-box, border-box;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+
+    /* Last 5 */
+    .ga-last5{ display:flex; align-items:center; gap:10px; margin:8px 0 12px; flex-wrap:wrap; }
+    .ga-last5-label{
+      display:flex; align-items:center; gap:6px; color:var(--ga-muted); font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+      font-size:11px;
+    }
+    .ga-chips{ display:flex; gap:6px; }
+    .ga-chip{ width:22px; height:22px; border-radius:6px; font-size:12px; font-weight:900;
+      display:flex; align-items:center; justify-content:center; color:#082c22; }
+    .ga-chip.W{ background:#34d399; }  /* emerald */
+    .ga-chip.D{ background:#fbbf24; }  /* amber */
+    .ga-chip.L{ background:#f87171; }  /* red */
+
+    /* KPIs */
+    .ga-kpis{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px; }
+    .ga-kpi{
+      background: var(--ga-glass);
+      border: 1px solid var(--ga-line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .ga-kpi .ga-kpi-label{ font-size:11px; color:#cbd5e1; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+    .ga-kpi .ga-kpi-value{ font-size:18px; font-weight:800; color:#e5f7f0; margin-bottom:6px; }
+    .ga-kpi .ga-bar{ height:6px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+    .ga-kpi .ga-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--ga-emr), #22D3EE); transition:width .8s ease; }
+
+    /* Matches */
+    .ga-matches{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+    .ga-match{
+      display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+      padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid var(--ga-line);
+    }
+    .ga-match:hover{ background:rgba(34,211,238,.09); border-color:rgba(34,211,238,.28); transform:translateX(3px); transition:.18s ease; }
+    .ga-left{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+    .ga-date{ display:flex; align-items:center; gap:6px; font-weight:700; }
+    .ga-venue{ display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:999px;
+      background: rgba(255,255,255,.12); border:1px solid var(--ga-line); color:#e6fbf5; font-size:12px; font-weight:700; }
+    .ga-muted{ color: var(--ga-muted); }
+    .ga-opp{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 46vw; }
+
+    .ga-right{ display:flex; align-items:center; gap:6px; }
+    .ga-score{ padding:3px 8px; border-radius:6px; font-weight:800; background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06)); }
+    .ga-badge{ padding:3px 8px; border-radius:6px; font-size:11px; font-weight:800; }
+    .ga-badge.W{ background:rgba(16,185,129,.2); color:var(--ga-emr); }     /* Win */
+    .ga-badge.D{ background:rgba(245,158,11,.25); color:var(--ga-amber); }  /* Draw */
+    .ga-badge.L{ background:rgba(239,68,68,.23); color:var(--ga-red); }     /* Loss */
+
+    /* Row accent by result */
+    .ga-match[data-result="W"]{ box-shadow: inset 3px 0 0 0 var(--ga-emr); }
+    .ga-match[data-result="D"]{ box-shadow: inset 3px 0 0 0 var(--ga-amber); }
+    .ga-match[data-result="L"]{ box-shadow: inset 3px 0 0 0 var(--ga-red); }
+
+    /* Responsive */
+    @media (max-width:700px){
+      .ga-opp{ max-width: 60vw; }
+      .ga-kpis{ grid-template-columns: 1fr; }
+    }
+    /* The scroll container (fixed height; the whole card scrolls) */
+.ga-form-card.card--scroll{
+  height: clamp(340px, 55vh, 520px);   /* pick what you like */
+  overflow: auto;                      /* critical: this is the scrolling box */
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border);
+  color: var(--text);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Sticky header row */
+.sticky-head{
+  position: sticky; top: 0; z-index: 5;     /* makes it stick */
+  display: grid; grid-template-columns: 1fr 1fr auto; /* title | spacer | logo */
+  align-items: center; gap: 10px;
+  padding: 10px 12px;
+
+  /* dark, slightly translucent header with blur for premium feel */
+  background: linear-gradient(180deg, var(--bg-2), rgba(15,21,34,.75));
+  -webkit-backdrop-filter: saturate(1.2) blur(6px);
+          backdrop-filter: saturate(1.2) blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Title + icon */
+.ga-title{ display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.ga-ico{ width:18px; height:18px; opacity:.9; color: var(--accent); }
+
+/* Team logo at right */
+.ga-team-logo{
+  width: 28px; height: 28px; object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.4));
+}
+
+/* Nice thin scrollbar */
+.ga-form-card.card--scroll{ scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent; }
+.ga-form-card.card--scroll::-webkit-scrollbar{ width: 10px; }
+.ga-form-card.card--scroll::-webkit-scrollbar-thumb{ border-radius: 10px; background: color-mix(in srgb, var(--accent) 60%, #333); }
+.ga-form-card.card--scroll::-webkit-scrollbar-track{ background: transparent; }
+
+  </style>
+
+  <!-- CARD -->  
+
+ 
+  <div class="ga-form-card card--scroll" id="away-form-card" aria-label="Away team recent form">
+    <div class="ga-head">
+      <!-- title left -->
+
+      <div class="ga-title" title="Form — {{ match.away }}">
+    
+        <!-- Football icon -->
+        <svg class="ga-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M7 7l5-2 5 2 1 4-4 5h-4L6 11l1-4z"></path>
+        </svg>
+            <div class="sticky-head">
+         <h4 class="one-line-wrap">
+         
+
+  <span class="name" title="{{ match.away }}">form -
+  {{ match.away }}</span>
+
+</h4>
+  </div>
+      </div>
+
+      <!-- spacer -->
+      <div></div>
+
+      <!-- logo right -->
+      {% if match.away_logo %}
+        <img src="{{ match.away_logo }}" alt="{{ match.away }} logo" class="ga-team-logo" loading="lazy">
+      {% endif %}
+    </div>
+
+    {% if form_away.last and form_away.last|length > 0 %}
+      <!-- Last 5 -->
+      <div class="ga-last5">
+        <div class="ga-last5-label">
+          <!-- calendar icon -->
+          <svg class="ga-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Last 5</span>
+        </div>
+        <div class="ga-chips" title="{{ form_away.summary }}">
+          {% for result in form_away.summary|slice:":5" %}
+            <span class="ga-chip {{ result }}">{{ result }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="ga-kpis">
+        <div class="ga-kpi">
+          <div class="ga-kpi-label">Pts (L5)</div>
+          <div class="ga-kpi-value ga-kpi-pts">—</div>
+          <div class="ga-bar"><div class="ga-fill ga-kpi-bar"></div></div>
+        </div>
+        <div class="ga-kpi">
+          <div class="ga-kpi-label">Record</div>
+          <div class="ga-kpi-value ga-kpi-record">—</div>
+        </div>
+      </div>
+
+      <!-- Matches -->
+      <ul class="ga-matches">
+        {% for it in form_away.last %}
+          <li class="ga-match" data-result="{{ it.result|upper }}">
+            <div class="ga-left">
+              <div class="ga-date">
+                <!-- whistle icon -->
+                <svg class="ga-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 14a5 5 0 10-4 2h3l3 3v-3l2-2z"></path>
+                  <circle cx="8" cy="14" r="3"></circle>
+                </svg>
+                <strong>{{ it.date }}</strong>
+              </div>
+              {% if it.venue %}
+                <span class="ga-venue" title="Venue">
+                  <!-- stadium icon -->
+                  <svg class="ga-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 10c3-2 15-2 18 0v7c-3 2-15 2-18 0v-7z"></path>
+                    <path d="M3 10l9 4 9-4"></path>
+                    <path d="M9 4l3 2 3-2"></path>
+                  </svg>
+                  {{ it.venue }}
+                </span>
+              {% endif %}
+              <span class="ga-muted">vs</span>
+              <span class="ga-opp">{{ it.opp }}</span>
+            </div>
+            <div class="ga-right">
+              <span class="ga-score">{{ it.score }}</span>
+              <span class="ga-badge {{ it.result }}">{{ it.result }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="ga-muted">No recent results.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- KPI logic (only targets .ga- classes) -->
+<script>
+(function(){
+  if (window.__gaFormInit) return;
+  window.__gaFormInit = true;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const ptsMap = { W:3, D:1, L:0 };
+
+    document.querySelectorAll('.ga-form-card').forEach(card => {
+      const chips = Array.from(card.querySelectorAll('.ga-chip'))
+        .slice(0,5).map(n => n.textContent.trim().toUpperCase());
+
+      const last5 = chips.length
+        ? chips
+        : Array.from(card.querySelectorAll('.ga-match')).slice(0,5)
+            .map(li => (li.getAttribute('data-result') || '').toUpperCase());
+
+      let W=0, D=0, L=0, pts=0;
+      last5.forEach(r => { if(r==='W') W++; else if(r==='D') D++; else if(r==='L') L++; pts += (ptsMap[r]||0); });
+      const pct = Math.round((pts/15)*100);
+
+      const ptsEl = card.querySelector('.ga-kpi-pts');
+      const recEl = card.querySelector('.ga-kpi-record');
+      const barEl = card.querySelector('.ga-kpi-bar');
+
+      if (ptsEl) ptsEl.textContent = `${pts} / 15`;
+      if (recEl) recEl.textContent = `${W}-${D}-${L}`;
+      if (barEl) requestAnimationFrame(() => { barEl.style.width = pct + '%'; });
+    });
+  });
+})();
+</script>
+
+
+
+
+
+
+  
+
+  <!-- AWAY -->
+  <div class="card pitch-card">
+<div class="pitch-head">
+<h3>👥 Lineup — {{ match.away }}</h3>
+{% if away_lineup.formation %}<span class="formation-pill">{{ away_lineup.formation }}</span>{% endif %}
+</div>
+
+{% if away_lineup.exists %}
+<div class="pitch">
+  <div class="circle"></div>
+  <div class="half"></div>
+  <div class="rows">
+
+    <!-- GK row -->
+    <div class="row">
+      {% for p in away_lineup.starters %}
+        {% if p.pos and 'G' in p.pos %}
+          <div class="player">
+            <div class="badge" title="{{ p.name }}">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}GK{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- DEF row -->
+    <div class="row">
+      {% for p in away_lineup.starters %}
+        {% if p.pos and 'D' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}D{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- MID row -->
+    <div class="row">
+      {% for p in away_lineup.starters %}
+        {% if p.pos and 'M' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}M{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- FWD row -->
+    <div class="row">
+      {% for p in away_lineup.starters %}
+        {% if p.pos and 'F' in p.pos %}
+          <div class="player">
+            <div class="badge">
+              {% if p.id %}
+                <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+                     alt="{{ p.name }}" class="player-img">
+              {% endif %}
+              <span class="num">{% if p.number %}#{{ p.number }}{% else %}F{% endif %}</span>
+            </div>
+            <div class="pname">{{ p.name }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Spacer -->
+    <div class="row"></div>
+  </div>
+</div>
+
+{% if away_lineup.bench and away_lineup.bench|length > 0 %}
+<details class="bench">
+  <summary>Bench ({{ away_lineup.bench|length }})</summary>
+  <ul>
+    {% for p in away_lineup.bench %}
+      <li>
+        {% if p.id %}
+          <img src="https://media.api-sports.io/football/players/{{ p.id }}.png"
+               alt="{{ p.name }}" class="bench-img">
+        {% endif %}
+        <span class="dot">{% if p.number %}{{ p.number }}{% else %}+{% endif %}</span>
+        {{ p.name }} {% if p.pos %}<span class="meta-pill">{{ p.pos }}</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+
+{% else %}
+<div class="muted" style="padding:16px">No lineup available.</div>
+{% endif %}
+
+<style>
+.player-img {
+  width: 34px; height: 34px; border-radius: 50%;
+  object-fit: cover; margin-right: 4px; vertical-align: middle;
+}
+.bench-img {
+  width: 24px; height: 24px; border-radius: 50%;
+  object-fit: cover; margin-right: 6px; vertical-align: middle;
+}
+.badge {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.05); border-radius: 50%;
+  width: 48px; height: 48px; overflow: hidden;
+}
+.num {
+  position: absolute; bottom: 2px; right: 2px;
+  font-size: 0.7rem; font-weight: 600;
+  background: rgba(0,0,0,.6); color: #fff;
+  padding: 1px 4px; border-radius: 4px;
+}
+/* Fixed-height card wrapper */
+.fixed-h{
+  /* set your default height once; tweak per breakpoint as needed */
+  --card-h: 420px;
+  height: var(--card-h);
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr) auto; /* head / body / foot (foot optional) */
+  overflow: hidden;           /* hide overflow edges */
+  border-radius: 14px;
+}
+
+/* Make the middle content area scroll */
+.fixed-h > .scroll,                /* generic */
+.fixed-h .table-wrap,              /* your standings container */
+.fixed-h .xfer-list,               /* transfers list */
+.fixed-h .inj-list,                /* injuries list */
+.fixed-h .trophy-list {            /* trophies list */
+  min-height: 0;                   /* CRITICAL in grid/flex layouts */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;   /* prevents layout shift when scrollbar appears */
+  padding-right: 2px;                   /* tiny space to avoid text touching the rail */
+}
+
+/* Nice thin dark scrollbar */
+.fixed-h > .scroll,
+.fixed-h .table-wrap,
+.fixed-h .xfer-list,
+.fixed-h .inj-list,
+.fixed-h .trophy-list {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 50%, #444) transparent;
+}
+.fixed-h > .scroll::-webkit-scrollbar,
+.fixed-h .table-wrap::-webkit-scrollbar,
+.fixed-h .xfer-list::-webkit-scrollbar,
+.fixed-h .inj-list::-webkit-scrollbar,
+.fixed-h .trophy-list::-webkit-scrollbar { width: 10px; }
+.fixed-h > .scroll::-webkit-scrollbar-thumb,
+.fixed-h .table-wrap::-webkit-scrollbar-thumb,
+.fixed-h .xfer-list::-webkit-scrollbar-thumb,
+.fixed-h .inj-list::-webkit-scrollbar-thumb,
+.fixed-h .trophy-list::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 60%, #333);
+}
+.sticky-head{ position: sticky; top: 0; background: var(--bg-2); z-index: 1; }
+.one-line-wrap{
+  display:flex; align-items:baseline; gap:.5rem;
+  margin-top:.5rem; white-space:nowrap; /* one line only */
+}
+.one-line-wrap .name{
+  min-width:0; flex:1 1 auto;
+  overflow:hidden; text-overflow:ellipsis;   /* only the name truncates */
+}
+.one-line-wrap .label{
+  flex:0 0 auto; white-space:nowrap;         /* always visible */
+}
+
+
+</style>
+
+</div>
+
+<!-- AWAY -->
+    <div class="inj-col mt-10 scroll2">
+    <div class="sticky-head">
+      <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.away }}">{{ match.away }}</span>
+  <span class="label">Injured Players</span>
+</h4>
+
+      </div>
+      {% if injuries_away %}
+        <div class="inj-list">
+          {% for inj in injuries_away %}
+            <div class="inj-card">
+              <div class="inj-avatar">
+                {% if inj.player_id %}
+                  <img src="https://media.api-sports.io/football/players/{{ inj.player_id }}.png"
+                       alt="{{ inj.player_name|default:'Player' }}">
+                {% else %}
+                  <svg viewBox="0 0 40 40" width="42" height="42">
+                    <circle cx="20" cy="20" r="20" fill="#e5e7eb"></circle>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="inj-body">
+                <div class="inj-name">{{ inj.player_name|default:"Unknown" }}</div>
+                <div class="inj-sub">
+                  {% if inj.type %}<span class="inj-type">{{ inj.type }}</span>{% endif %}
+                  {% if inj.reason %}<span class="inj-reason">{{ inj.reason }}</span>{% endif %}
+                  {% if inj.date %}<span class="inj-date">{{ inj.date|date:"Y-m-d" }}</span>{% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">No recent injuries found.</div>
+      {% endif %}
+    </div>
+
+
+<div class="scroll2 ">
+<div class="xfer-col mt-10 ">
+ <div class="sticky-head">
+ <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.away }}">{{ match.away }}</span>
+  <span class="label"> - Latest Transfers</span>
+</h4>
+
+      
+</div>
+      {% if transfers.away %}
+      <div class="xfer-list">
+        {% for tr in transfers.away %}
+          <div class="xfer-card">
+            <div class="xfer-avatar">
+              {% if tr.player_id %}
+                <img src="https://media.api-sports.io/football/players/{{ tr.player_id }}.png"
+                     alt="{{ tr.player_name|default:'Player' }}">
+              {% else %}
+                <svg viewBox="0 0 40 40" width="42" height="42">
+                  <circle cx="20" cy="20" r="20" fill="#e5e7eb"></circle>
+                </svg>
+              {% endif %}
+            </div>
+
+            <div class="xfer-body">
+              <div class="xfer-name">
+                {{ tr.player_name|default:"Unknown" }}
+              </div>
+
+              <div class="xfer-sub">
+                <span class="xfer-move" title="{{ tr.from_team }} → {{ tr.to_team }}">
+                  {% if tr.from_team_id %}
+                    <span class="crest">
+                      <img src="https://media.api-sports.io/football/teams/{{ tr.from_team_id }}.png" alt="{{ tr.from_team }}">
+                    </span>
+                  {% endif %}
+
+                  <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h12M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+
+                  {% if tr.to_team_id %}
+                    <span class="crest">
+                      <img src="https://media.api-sports.io/football/teams/{{ tr.to_team_id }}.png" alt="{{ tr.to_team }}">
+                    </span>
+                  {% endif %}
+
+                  <span class="muted">
+                    {% if tr.from_team %}{{ tr.from_team }}{% else %}—{% endif %}
+                    → 
+                    {% if tr.to_team %}{{ tr.to_team }}{% else %}—{% endif %}
+                  </span>
+                </span>
+
+                {% if tr.type %}
+                  <span class="xfer-type">{{ tr.type }}</span>
+                {% endif %}
+
+                {% if tr.date %}
+                  <span class="xfer-date">{{ tr.date|date:"Y-m-d" }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <div class="empty">No recent transfers found.</div>
+      {% endif %}
+    </div>
+  </div>
+
+
+
+
+{% if trophies_away %}
+  <div class="trophy-col mt-10 scroll2">
+   <div class="sticky-head">
+    <h4 class="one-line-wrap">
+  <span class="name" title="{{ match.away }}">{{ match.away }}</span>
+  <span class="label">Honours</span>
+</h4>
+
+    </div>
+    <ul class="trophy-list">
+      {% for tr in trophies_away %}
+        <li class="trophy-card {% if tr.place == 1 %}gold{% elif tr.place == 2 %}silver{% elif tr.place == 3 %}bronze{% else %}other{% endif %}">
+          <div class="trophy-avatar">
+            {% if tr.player_id %}
+              <img
+                src="https://media.api-sports.io/football/players/{{ tr.player_id }}.png"
+                alt="{{ tr.player_name|default:'Player' }}"
+                width="44" height="44" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+            {% else %}
+              <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+                <circle cx="20" cy="20" r="20" fill="#9ca3af"></circle>
+              </svg>
+            {% endif %}
+          </div>
+
+          <div class="trophy-body">
+            <div class="trophy-title">
+              <span class="medal" aria-hidden="true">
+                {% if tr.place == 1 %}🏆{% elif tr.place == 2 %}🥈{% elif tr.place == 3 %}🥉{% else %}🎖️{% endif %}
+              </span>
+              <strong class="name">{{ tr.player_name|default:"" }}</strong>
+              <span class="sep">—</span>
+              <span class="league">{{ tr.league|default:"" }}</span>
+            </div>
+
+            <div class="trophy-meta">
+              {% if tr.season %}<span class="chip">{{ tr.season }}</span>{% endif %}
+              {% if tr.place %}<span class="chip">Place {{ tr.place }}</span>{% endif %}
+              {% if tr.country %}<span class="chip">{{ tr.country }}</span>{% endif %}
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% else %}
+  <div class="empty">No trophies found for current squad.</div>
+{% endif %}
+<style>
+/* avatar matches transfers/injuries */
+.trophy-avatar{
+  width:44px; height:44px; flex:0 0 44px; border-radius:50%;
+  display:grid; place-items:center; overflow:hidden;
+  background: radial-gradient(60% 60% at 50% 35%, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+              var(--bg-2);
+  border:1px solid var(--border);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.5) inset, 0 0 0 1px rgba(255,255,255,.06);
+  margin-right: 10px;
+}
+.trophy-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* tiny nudge so medal + name align nicely */
+.trophy-title .medal{ font-size:18px; line-height:1; margin-right:6px;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+</style>
+
+
+
+
+</div>
+
+
+<div>
+      
+{% if trophies_home or trophies_away %}
+<section class="card">
+  <h3>Trophies (current squad)</h3>
+  <div class="grid grid-cols-2 gap-4">
+    
+
+    kjhgfghjkjhgfghjuh
+  </div>
+</section>
+{% endif %}
+
+</div>
+
+
+<script>
+  // Add some interactive elements
+  document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars
+    setTimeout(function() {
+      const progressBars = document.querySelectorAll('.progress-bar');
+      progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    }, 500);
+    
+    // Add hover effects to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.zIndex = '10';
+      });
+      card.addEventListener('mouseleave', function() {
+        this.style.zIndex = '';
+      });
+    });
+    
+    // Simulate live odds updates
+    setInterval(() => {
+      const oddsValues = document.querySelectorAll('.odds-value');
+      oddsValues.forEach(odd => {
+        if (Math.random() > 0.7) {
+          const currentValue = parseFloat(odd.textContent);
+          const change = (Math.random() * 0.2) - 0.1;
+          const newValue = Math.max(1.01, currentValue + change);
+          odd.textContent = newValue.toFixed(2);
+          
+          // Add flash animation
+          odd.style.animation = 'none';
+          setTimeout(() => {
+            odd.style.animation = 'flash 0.5s';
+          }, 10);
+        }
+      });
+    }, 5000);
+  });
+  
+  // Add keyframe for flash animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes flash {
+      0% { background-color: transparent; }
+      50% { background-color: rgba(16, 185, 129, 0.3); }
+      100% { background-color: transparent; }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+<script>
+/* Turn the All Predictions table into grouped green tiles.
+   If not subscribed, keep ALL markets visible but lock the probability
+   (show 🔒 and disable the progress bar) for non-free markets. */
+document.addEventListener('DOMContentLoaded', () => {
+  // Are they subscribed?
+  const IS_SUB = {% if subscription.current %}true{% else %}false{% endif %};
+
+  // Free markets for non-subs
+  // Only these "base" markets are free. Everything else (e.g. 1X2_0_15, HT_1X2) is premium.
+const isFreeMarket = (name = "") => {
+  // normalize: lowercase, strip spaces, then strip non-alphanumerics
+  const canonical = String(name).toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+  const FREE = new Set([
+    "1x2",          // “1X2”, “1 X 2”
+    "matchodds",    // “match_odds”
+    "ft1x2",        // “ft_1x2”
+    "doublechance", // “double_chance”
+    "dc"            // “DC”
+  ]);
+  return FREE.has(canonical);
+};
+
+
+  // Find the "All Predictions" card's table
+  const cards = Array.from(document.querySelectorAll('.center-column .card'));
+  const predCard = cards.find(c => (c.querySelector('strong')||{}).textContent?.trim() === '📊 All Predictions');
+  const table = predCard ? predCard.querySelector('table') : null;
+  if (!table) return;
+
+  // Read rows -> group by market (DON'T filter/hide anything)
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+  if (!rows.length) return;
+
+  const groups = {};
+  rows.forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    const market = (tds[0]?.textContent || '').trim();
+    const spec   = (tds[1]?.textContent || '').trim();
+    const prob   = (tds[2]?.textContent || '').trim(); // e.g. "54.2%"
+    const odds   = (tds[3]?.textContent || '').trim();
+    if (!market) return;
+    (groups[market] ||= []).push({ spec, prob, odds });
+  });
+
+  // Build accordion
+  const wrap = document.createElement('div');
+  wrap.className = 'bet-accordion';
+
+  // Small style for locked state (probability)
+  const style = document.createElement('style');
+  style.textContent = `
+    .bet-accordion { display: grid; gap: 10px; }
+    .bet-section { border: 1px solid rgba(255,255,255,.08); border-radius: 10px; background: rgba(16,24,39,.55); overflow: hidden; }
+    .bet-head { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; cursor:pointer; font-weight:600; }
+    .bet-body { padding:10px; display:grid; gap:10px; }
+    .bet-section.closed .bet-body { display:none; }
+    .bet-chip { display:flex; align-items:center; justify-content:space-between; gap:10px; background: rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.25); border-radius:10px; padding:8px 10px; }
+    .bet-chip .meta { font-size:12px; opacity:.9; }
+    .bet-prog { height:6px; background: rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin-top:6px; }
+    .bet-bar { height:100%; background: currentColor; color: rgba(16,185,129,1); transition: width .35s ease; }
+    .bet-subhead { margin-top:6px; font-weight:600; opacity:.9; }
+    .odds { font-weight:700; white-space:nowrap; }
+    .bet-chip.locked .meta { color:#D4AF37; font-weight:600; }     /* gold */
+    .bet-chip.locked .bet-bar { width:0 !important; opacity:.35; } /* disable bar */
+    .bet-chip.locked .meta .lock { margin-right:4px; }
+  `;
+  document.head.appendChild(style);
+
+  Object.entries(groups).forEach(([market, items]) => {
+    const sec = document.createElement('div');
+    sec.className = 'bet-section';
+
+    const head = document.createElement('div');
+    head.className = 'bet-head';
+    head.innerHTML = `<span>${market}</span><span class="caret">▾</span>`;
+    head.addEventListener('click', () => sec.classList.toggle('closed'));
+    sec.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'bet-body';
+
+    // helper: extract OU threshold like "1.5", "2.5", "3.5" from spec
+    const extractOUKey = (s='') => {
+      s = String(s).toLowerCase().replace(/\s+/g,'');
+      const m = s.match(/(\d+(?:\.\d+)?)(?=.*(?:o|over|u|under))/i) || s.match(/(?:o|over|u|under)(\d+(?:\.\d+)?)/i);
+      return m ? m[1] : null;
+    };
+
+    // helper: render one chip (with lock handling)
+    const renderChip = ({spec, prob, odds}, locked=false) => {
+      const chip = document.createElement('div');
+      chip.className = 'bet-chip' + (locked ? ' locked' : '');
+      const cleanPct = String(prob||'0').replace('%','').trim();
+      const pctLabel = locked
+        ? `<span class="lock">🔒</span> <span title="Unlock with Golden Membership">Locked</span>`
+        : (prob ? (cleanPct + '%') : '—');
+      chip.innerHTML = `
+        <div style="flex:1; min-width:0;">
+          <div>${spec || '—'}</div>
+          <div class="meta">${pctLabel}</div>
+          <div class="bet-prog"><div class="bet-bar" style="width:${locked ? '0' : cleanPct+'%'}"></div></div>
+        </div>
+        <div class="odds">${odds || '—'}</div>
+      `;
+      if (locked) chip.title = 'Unlock this prediction with Golden Membership';
+      return chip;
+    };
+
+    // decide if this market is OU-like
+    const marketName = (market || '').toLowerCase();
+    const isOU = /over\/?under|overunder|\bou\b/.test(marketName);
+    const LOCKED = !IS_SUB && !isFreeMarket(market); // premium when not subscribed
+
+    // If OU, subgroup by threshold; else render as-is
+    if (isOU) {
+      const byKey = {};
+      items.forEach(it => {
+        const key = extractOUKey(it.spec) || '_other';
+        (byKey[key] ||= []).push(it);
+      });
+
+      const keys = Object.keys(byKey)
+        .filter(k => k !== '_other')
+        .sort((a,b)=>parseFloat(a)-parseFloat(b));
+
+      const prefer = ['1.5','2.5','3.5'].filter(k => byKey[k]);
+      const rest = keys.filter(k => !prefer.includes(k));
+      const finalOrder = [...prefer, ...rest, ...('_other' in byKey ? ['_other'] : [])];
+
+      finalOrder.forEach(k => {
+        if (k !== '_other') {
+          const h = document.createElement('div');
+          h.className = 'bet-subhead';
+          h.textContent = `${k} OU`;
+          body.appendChild(h);
+        }
+        const thItems = byKey[k].slice().sort((a,b) => {
+          const sA = String(a.spec).toLowerCase();
+          const sB = String(b.spec).toLowerCase();
+          const rank = s => /o|over/.test(s) ? 1 : (/u|under/.test(s) ? 2 : 99);
+          return rank(sA) - rank(sB);
+        });
+        thItems.forEach(it => body.appendChild(renderChip(it, LOCKED)));
+      });
+
+    } else {
+      if ((market || '').toLowerCase().includes('1x2')) {
+        const order = { h: 1, d: 2, a: 3 };
+        items
+          .slice()
+          .sort((a, b) => (order[a.spec?.toLowerCase()] || 99) - (order[b.spec?.toLowerCase()] || 99))
+          .forEach(it => body.appendChild(renderChip(it, LOCKED)));
+      } else {
+        items.forEach(it => body.appendChild(renderChip(it, LOCKED)));
+      }
+    }
+
+    sec.appendChild(body);
+    wrap.appendChild(sec);
+  });
+
+  // Mount and remove original table (no raw table debug)
+  predCard.appendChild(wrap);
+  table.remove();
+
+  // Start with sections open except the very first
+  const secs = wrap.querySelectorAll('.bet-section');
+  secs.forEach((s,i)=>{ if(i>0) s.classList.add('closed'); });
+
+  // Animate bars after mount
+  requestAnimationFrame(()=> {
+    wrap.querySelectorAll('.bet-bar').forEach(b=>{
+      const w = b.style.width;
+      b.style.width = '0%';
+      setTimeout(()=> b.style.width = w, 80);
+    });
+  });
+});
+</script>
+
+{%endblock%}

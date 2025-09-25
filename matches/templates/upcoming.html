@@ -1,0 +1,30 @@
+<!doctype html>
+<title>Upcoming Predictions</title>
+<style>
+ body { font-family: system-ui, sans-serif; margin:20px; }
+ .card { border:1px solid #ddd; border-radius:8px; padding:12px; margin-bottom:16px; }
+ .hdr { font-weight:600; margin-bottom:8px; }
+ table { width:100%; border-collapse: collapse; }
+ th, td { padding:6px 8px; border-bottom:1px solid #eee; text-align:left; }
+ .p { white-space:nowrap; }
+</style>
+{% for m in matches %}
+  <div class="card">
+    <div class="hdr">{{ m.kickoff_utc|date:"Y-m-d H:i" }} — {{ m.home.name }} vs {{ m.away.name }}</div>
+    <table>
+      <thead><tr><th>Market</th><th>Pick</th><th class="p">Prob</th><th class="p">Fair</th></tr></thead>
+      <tbody>
+        {% for pm in m.predicted_markets.all %}
+          <tr>
+            <td>{{ pm.market_code }}</td>
+            <td>{{ pm.specifier }}</td>
+            <td class="p">{{ pm.p_model|floatformat:3 }}</td>
+            <td class="p">{% if pm.p_model %}{{ 1|divisibleby:pm.p_model }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% empty %}
+  <p>No matches in window.</p>
+{% endfor %}

@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>My 2-Odds Tickets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg:#0c0f14; --card:#141922; --ink:#eaf0ff; --muted:#9fb0cc;
+      --ok:#42d392; --warn:#f59e0b; --lose:#94a3b8; --stroke:#233046;
+    }
+    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    .wrap{max-width:980px;margin:24px auto;padding:0 16px;}
+    .h1{font-size:22px;font-weight:800;margin:8px 0 16px;}
+    .card{background:linear-gradient(180deg,#151b25,#10141c);border:1px solid var(--stroke);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);}
+    .row{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+    .pad{padding:14px 16px;}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center}
+    .hdr{font-size:12px;color:#9fb0cc;text-transform:uppercase;letter-spacing:.08em}
+    .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--stroke);padding:4px 8px;font-size:12px;background:#0f141c}
+    .chip.ok{color:var(--ok);border-color:#1e3a2d}
+    .chip.pending{color:var(--warn);border-color:#3a2f1b}
+    .chip.lost{color:var(--lose)}
+    .btn{appearance:none;border:1px solid var(--stroke);background:#0f141c;color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer;font-size:12px}
+    .btn:hover{border-color:#3a4a66}
+    input[type="date"]{background:#0f141c;border:1px solid var(--stroke);color:var(--ink);padding:8px 10px;border-radius:8px}
+    a{color:#a7c0ff;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .empty{padding:24px;text-align:center;color:var(--muted)}
+    .mono{font-variant-numeric:tabular-nums;}
+
+    /* details row */
+    .details{grid-column:1/-1;background:#0f141c;border:1px solid #1f2a3d;border-radius:10px;padding:12px;margin:8px 0 2px}
+    .legs{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;border-bottom:1px dashed rgba(58,69,87,.6);padding:8px 0}
+    .legs:last-child{border-bottom:none}
+    .idx{width:24px;height:24px;border-radius:8px;background:#0e1420;border:1px solid #223043;color:#9fb0cc;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+    .teams{font-size:14px;font-weight:600}
+    .small{color:var(--muted);font-size:12px;margin-top:2px}
+    .badge{border:1px solid #29374c;background:#0d1420;border-radius:8px;padding:4px 8px;color:#d7e4ff;font-weight:600;font-size:12px}
+    .stack{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="h1">My 2-Odds Tickets</div>
+
+    <!-- Filter bar -->
+    <form method="get" class="card pad row" action="">
+      <div class="row" style="gap:8px">
+        <label class="muted">From</label>
+        <input type="date" name="start" value="{{ start|date:'Y-m-d' }}">
+        <label class="muted">To</label>
+        <input type="date" name="end" value="{{ end|date:'Y-m-d' }}">
+        <button class="btn" type="submit">Apply</button>
+      </div>
+      <div class="muted">
+        Showing <strong>{{ count|default:tickets|length|default:0 }}</strong>
+        ticket{{ count|default:tickets|length|default:0|pluralize }}
+      </div>
+    </form>
+
+    <!-- Tickets table -->
+    <div class="card pad" style="margin-top:14px">
+      <div class="grid hdr" style="padding:6px 0 8px 0;border-bottom:1px solid var(--stroke)">
+        <div>Date</div><div>Odds (book)</div><div>Legs</div><div>Status</div><div>Actions</div>
+      </div>
+
+      {% if tickets %}
+        {% for t in tickets %}
+          <div class="grid" style="padding:10px 0;border-bottom:1px dashed rgba(58,69,87,.6)">
+            <div class="mono">
+              <a href="{% url 'my_two_odds_detail' t.id %}">{{ t.ticket_date }}</a>
+              {% if t.name %}<span class="muted">· {{ t.name }}</span>{% endif %}
+              {% if t.base_ticket_id %}<span class="muted"> · base #{{ t.base_ticket_id }}</span>{% endif %}
+            </div>
+
+            <div class="mono">
+              {% if t.acc_bookish_odds %}{{ t.acc_bookish_odds|floatformat:2 }}{% else %}—{% endif %}
+              <span class="muted">(
+                {% if t.acc_fair_odds %}fair {{ t.acc_fair_odds|floatformat:2 }}
+                {% else %}fair —{% endif %}
+              )</span>
+            </div>
+
+            <div>{{ t.legs|default:"0" }}</div>
+
+            <div>
+              {% with s=t.status|default:"pending" %}
+                <span class="chip {% if s == 'won' %}ok{% elif s == 'pending' %}pending{% elif s == 'lost' %}lost{% endif %}">
+                  {% if s == 'won' %}WIN{% elif s == 'lost' %}LOSE{% elif s == 'void' %}VOID{% else %}PENDING{% endif %}
+                </span>
+              {% endwith %}
+            </div>
+
+            <div>
+              <a class="btn" href="{% url 'my_two_odds_detail' t.id %}">Open</a>
+              <details style="display:inline-block;margin-left:6px">
+                <summary style="cursor:pointer;color:#a7c0ff">View details</summary>
+                <div class="details">
+                  {% if t.selections %}
+                    {% for s in t.selections %}
+                      <div class="legs">
+                        <div class="idx">{{ forloop.counter }}</div>
+                        <div>
+                          <div class="teams">{{ s.home }} vs {{ s.away }}</div>
+                          <div class="small">{{ s.kickoff_utc }}</div>
+                        </div>
+                        <div class="stack">
+                          <span class="badge">{{ s.market }} — {{ s.specifier }}</span>
+                          {% if s.p %}<span class="badge">P: {{ s.p|floatformat:2 }}</span>{% endif %}
+                          {% if s.fair_odds %}<span class="badge">Fair: {{ s.fair_odds|floatformat:2 }}</span>{% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="small">No legs saved for this ticket.</div>
+                  {% endif %}
+                </div>
+              </details>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No saved tickets for this range.</div>
+      {% endif %}
+    </div>
+
+    <div class="muted" style="margin-top:10px">
+      Tip: click the date or “Open” to view/print the ticket.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{# templates/tickets/_two_odds_range_list.html #}
+<div style="display:grid; gap:12px;">
+  {% for it in items %}
+    <div style="background:#0f141c; border:1px solid #1e2735; border-radius:12px; padding:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+         <div class="brand text-sm">
+      <span class="logo-dot"></span>
+      <span><i class="fas fa-crown gold-accent"></i> Golden Odds Calculator </span>
+    </div>
+        <div style="color:#9fb0cc; font-size:12px;">{{ it.date }}</div>
+      </div>
+
+      {% if it.has_ticket %}
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; color:#9fb0cc; font-size:12px;">
+          <div>Legs: <b style="color:#eaf0ff">{{ it.legs_count }}</b></div>
+          <div>Odds: <b style="color:#eaf0ff">{{ it.acc_bookish_odds }}</b></div>
+          <div>Fair: <b style="color:#eaf0ff">{{ it.acc_fair_odds }}</b></div>
+          <div>Win %: <b style="color:#eaf0ff">{{ it.acc_probability_pct }}%</b></div>
+        </div>
+        <div>
+          {% for s in it.legs %}
+            <div style="display:flex; gap:10px; align-items:center; background:#111722; border:1px solid #1a2331; border-radius:8px; padding:8px; margin:6px 0;">
+              <div style="min-width:22px; text-align:center; color:#9fb0cc; font-weight:700;">{{ forloop.counter }}</div>
+              <div style="flex:1 1 auto;">
+                <div style="font-weight:700;">{{ s.home }} vs {{ s.away }}</div>
+                <div style="color:#9fb0cc; font-size:12px;">{{ s.kickoff_label|default:s.kickoff_utc }}</div>
+              </div>
+              <div style="display:flex; gap:8px; font-size:12px; color:#9fb0cc;">
+                <div style="border:1px solid #29374c; border-radius:6px; padding:2px 6px;">{{ s.market }} — {{ s.specifier }}</div>
+                <div style="border:1px solid #29374c; border-radius:6px; padding:2px 6px;">P: {{ s.p|floatformat:2 }}</div>
+                <div style="border:1px solid #29374c; border-radius:6px; padding:2px 6px;">Fair: {{ s.fair_odds }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="color:#9fb0cc;">{{ it.note|default:"No ticket for this day." }}</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
