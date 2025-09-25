@@ -1,0 +1,1 @@
+{"expected_features": ["a_corners_for10", "a_ga10", "a_gf10", "a_matches_14d", "a_poss10", "a_rest_days", "a_sot10", "a_stats_missing", "h_corners_for10", "h_ga10", "h_gf10", "h_matches_14d", "h_poss10", "h_rest_days", "h_sot10", "h_stats_missing", "home_team_id", "away_team_id"], "notes": "Order must be preserved in prediction."}
