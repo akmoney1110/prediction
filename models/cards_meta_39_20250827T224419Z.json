@@ -1,0 +1,52 @@
+{
+  "kind": "cards",
+  "league_id": 39,
+  "expected_features": [
+    "home_team_id",
+    "away_team_id",
+    "h_cards_for10",
+    "a_cards_for10",
+    "h_corners_for10",
+    "a_corners_for10",
+    "h_gf10",
+    "a_gf10",
+    "h_ga10",
+    "a_ga10",
+    "h_sot10",
+    "a_sot10",
+    "h_poss10",
+    "a_poss10",
+    "h_clean_sheets10",
+    "a_clean_sheets10",
+    "h_conv10",
+    "a_conv10",
+    "h_rest_days",
+    "a_rest_days",
+    "league_cluster"
+  ],
+  "num_cols": [
+    "h_cards_for10",
+    "a_cards_for10",
+    "h_corners_for10",
+    "a_corners_for10",
+    "h_gf10",
+    "a_gf10",
+    "h_ga10",
+    "a_ga10",
+    "h_sot10",
+    "a_sot10",
+    "h_poss10",
+    "a_poss10",
+    "h_clean_sheets10",
+    "a_clean_sheets10",
+    "h_conv10",
+    "a_conv10",
+    "h_rest_days",
+    "a_rest_days"
+  ],
+  "cat_cols": [
+    "home_team_id",
+    "away_team_id",
+    "league_cluster"
+  ]
+}

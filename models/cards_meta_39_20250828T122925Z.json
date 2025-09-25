@@ -1,0 +1,14 @@
+{
+  "kind": "cards",
+  "league_id": 39,
+  "timestamp": "20250828T122925Z",
+  "expected_features": [
+    "home_id",
+    "away_id"
+  ],
+  "numeric": [
+    "home_id",
+    "away_id"
+  ],
+  "categorical": []
+}
